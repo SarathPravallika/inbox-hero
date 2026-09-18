@@ -3,7 +3,7 @@
 import importlib
 from utils import heading, rule
 
-SUITES = ("test_constants", "test_store", "test_rules")
+SUITES = ("test_constants", "test_store", "test_rules", "test_classify")
 
 def load(name: str):
     return importlib.import_module(name)

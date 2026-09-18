@@ -58,4 +58,13 @@ class Rules:
     BOILERPLATE_LIMIT = 150
 
 
+class Model:
+    TEMPERATURE = 0.0
+    BATCH_SIZE = 10
+    GAP_SECONDS = 4
+    RETRIES = 3
+    BACKOFF_SECONDS = 20
+    TIMEOUT_SECONDS = 180
+
+
 WIDTH = 78
