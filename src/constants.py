@@ -8,6 +8,8 @@ class Paths:
     ROOT = Path(__file__).resolve().parent.parent
 
     INBOX = ROOT / "assignment-instructions" / "inbox.json"
+    RUN = ROOT / "run.json"
+    TRACE = ROOT / "trace.jsonl"
 
 
 class Disposition(StrEnum):
