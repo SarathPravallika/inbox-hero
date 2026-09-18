@@ -19,6 +19,11 @@ class Disposition(StrEnum):
     QUARANTINE = "quarantine"
 
 
+class Decided(StrEnum):
+    RULE = "rule"
+    MODEL = "model"
+
+
 class Tier(StrEnum):
     A = "A"
     B = "B"
@@ -36,6 +41,21 @@ class Capability(StrEnum):
     X2 = "X2"
     X3 = "X3"
     X4 = "X4"
+
+
+class Rules:
+    AUTOMATED = frozenset({
+        "no-reply", "noreply", "no_reply", "notifications", "notify", "receipts", "alerts",
+        "newsletter", "digest", "updates", "insights", "feedback", "mailer-daemon",
+        "ship-confirm", "orders", "invoice+statements", "billing", "info", "hello",
+        "support", "success", "help", "checkin", "security", "status",
+    })
+
+    RECEIPT = ("receipt", "invoice", "bill", "statement", "payout", "order", "renew")
+    DIGEST = ("digest", "newsletter", "weekly", "daily", "report", "recommendation",
+              "subscription", "top")
+
+    BOILERPLATE_LIMIT = 150
 
 
 WIDTH = 78
