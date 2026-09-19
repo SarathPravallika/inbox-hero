@@ -103,6 +103,19 @@ class Capability(StrEnum):
     X4 = "X4"
 
 
+class Manifest:
+    TIER = {Capability.R1: Tier.B,
+            Capability.R2: Tier.B,
+            Capability.R3: Tier.C,
+            Capability.R4: Tier.C,
+            Capability.R5: Tier.C,
+            Capability.R6: Tier.C,
+            Capability.X1: Tier.B,
+            Capability.X2: Tier.B,
+            Capability.X3: Tier.C,
+            Capability.X4: Tier.A}
+
+
 class Rules:
     AUTOMATED = frozenset({
         "no-reply", "noreply", "no_reply", "notifications", "notify", "receipts", "alerts",
@@ -413,6 +426,30 @@ class Followups:
              "the same gate as any other reply")
     STALE = ("this run was written before the follow-ups existed, so it records none. Run "
              "`python demo.py --cap X2 --fresh` and try again.")
+
+
+class Offers:
+    SLOTS = ("11:00", "14:00", "16:00")
+    DAYS = 5
+    OFFERED = 3
+    WEEKEND = (5, 6)
+    PLAIN = r"\b(\d{1,2}):(\d{2})\b"
+    BREAKS = "Sam does not take {subject} {bound} {value}"
+    TAKEN = "that time is already spoken for"
+    SHOWN = "{day} at {at}"
+    WHY = "asks for {slot}, and {because}"
+    BLOCKED = "on Sam's side that slot is held by {ids}, which the reply does not say"
+    INSTEAD = "instead: {slot}"
+    NOTHING = "nothing in the next {days} working days is both free and allowed"
+    INVENTED = "the reply named {times}, which was never offered"
+    MISDATED = "the reply named a day that was never offered"
+    DISCLOSED = "the reply said what the other appointment is"
+    SILENT = "the model wrote nothing to offer with"
+    NONE = "nothing proposed to Sam runs into a preference or into something already settled"
+    QUIET = ("the offer says when Sam is free and never what he is doing, so the reply "
+             "exposes availability and nothing else")
+    STALE = ("this run was written before the counter-offers existed, so it records none. "
+             "Run `python demo.py --cap X3 --fresh` and try again.")
 
 
 class Trace:

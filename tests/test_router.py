@@ -6,6 +6,7 @@ import re
 from constants import Decided, Disposition, Drafts, Kind
 from digest import Digest
 from followups import Followup
+from offers import Offer
 from memory import remember
 from router import build, claimed, counted, replies, sorted_out
 from store import load
@@ -24,6 +25,9 @@ DIGESTS = (Digest(thread="t-launch", ids=("m026", "m030"), summary="launch week"
 CHASES = (Followup(id="m044", to="priya@paperjet.io", subject="Re: contractor invoice",
                    sent="2026-09-02T17:20:00", waiting=7, chased=True,
                    body="Any update on the contractor invoice?"),)
+COUNTERS = (Offer(id="m043", to="aria.f@northwind.vc", what="meeting with partner",
+                  when="2026-09-14", at="09:00", because="Sam does not take meetings before",
+                  cited=("m041",), slots=("2026-09-14 11:00",), body="11:00am instead?"),)
 COPIES = "priya@paperjet.io"
 STANDING = ()
 
@@ -103,7 +107,7 @@ def check_artifact(store, decisions) -> list[str]:
                    {"body": "drafted by the fake", "cited": ["m010"]})
     recorded = claimed(store, decisions)
     artifact = build(store, decisions, made, standing, recorded, DIARY, DIGESTS, CHASES,
-                     "fake", "fake-model")
+                     COUNTERS, "fake", "fake-model")
     if len(artifact["drafts"]) != len(made):
         problems.append("the artifact lost a draft")
     for row in artifact["drafts"]:
@@ -115,7 +119,7 @@ def check_artifact(store, decisions) -> list[str]:
         problems.append(f"the copying rule reached {sorted(row['id'] for row in lawyers)}")
     if any(row["copy"] != [COPIES] for row in lawyers):
         problems.append(f"a legal message is copied to somebody other than {COPIES}")
-    for field in ("commitments", "conflicts", "digests", "followups"):
+    for field in ("commitments", "conflicts", "digests", "followups", "offers"):
         if field not in artifact:
             problems.append(f"the artifact carries no {field}")
     if [row["thread"] for row in artifact["digests"]] != [one.thread for one in DIGESTS]:

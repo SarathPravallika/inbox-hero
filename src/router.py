@@ -20,6 +20,7 @@ import drafts
 import followups
 import guard
 import memory
+import offers
 import retrieve
 import rules
 import tracing
@@ -57,7 +58,7 @@ def counted(decisions, by: Decided) -> int:
 
 
 def build(store, decisions, written_drafts, standing, recorded, diary, digests, chases,
-          provider: str, model: str) -> dict:
+          counters, provider: str, model: str) -> dict:
     return {
         "at": tracing.stamp(),
         "provider": provider,
@@ -91,6 +92,10 @@ def build(store, decisions, written_drafts, standing, recorded, diary, digests, 
         "followups": [{"id": one.id, "to": one.to, "subject": one.subject, "sent": one.sent,
                        "waiting": one.waiting, "chased": one.chased, "why": one.why,
                        "body": one.body, "refused": one.refused} for one in chases],
+        "offers": [{"id": one.id, "to": one.to, "what": one.what, "when": one.when,
+                    "at": one.at, "because": one.because, "cited": list(one.cited),
+                    "blocked": list(one.blocked), "slots": list(one.slots),
+                    "body": one.body, "refused": one.refused} for one in counters],
     }
 
 
@@ -124,6 +129,8 @@ def written(artifact: dict) -> dict:
         tracing.record(Capability.X1, "digest", **one)
     for one in artifact["followups"]:
         tracing.record(Capability.X2, "followup", **one)
+    for one in artifact["offers"]:
+        tracing.record(Capability.X3, "offer", **renamed(one, Trace.CLOCK))
     Paths.RUN.write_text(json.dumps(artifact, indent=2) + "\n")
     return artifact
 
@@ -142,8 +149,9 @@ def run(ask=None) -> dict:
     diary = commitments.gather(store, decisions, ask=ask)
     digests = digest.gather(store, ask=ask)
     chases = followups.gather(store, decisions, ask=ask)
+    counters = offers.gather(store, diary, standing, ask=ask)
     return written(build(store, decisions, written_drafts, standing, recorded, diary,
-                         digests, chases, config.PROVIDER, config.MODEL))
+                         digests, chases, counters, config.PROVIDER, config.MODEL))
 
 
 def stored() -> dict:

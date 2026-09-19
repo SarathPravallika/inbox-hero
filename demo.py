@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from constants import (Answer, Capability, Dashboard, Decided, Digest, Followups,
-                       Guard, Kind, Paths, WIDTH, Why)
+                       Guard, Kind, Offers, Paths, WIDTH, Why)
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -405,9 +405,60 @@ def chased(artifact: dict, args) -> None:
     print(wrap(Followups.GATED, 0))
 
 
+def offered(artifact: dict, args) -> None:
+    actions = importlib.import_module("actions")
+    drafts = importlib.import_module("drafts")
+    gate = importlib.import_module("gate")
+    offers = importlib.import_module("offers")
+    store = importlib.import_module("store")
+    ask = gate.prompt if asking(args) else None
+
+    heading("X3  a time that will not do, answered with three that will")
+    if "offers" not in artifact:
+        print(wrap(Offers.STALE, 2))
+        return
+
+    box = store.load()
+    written = len(actions.sent())
+    made = [one for one in artifact["offers"] if args.msg in (None, one["id"])]
+    verdicts = []
+
+    for one in made:
+        asked = offers.spoken(f"{one['when']} {one['at']}")
+        print(f"  {one['id']}  to {one['to']}")
+        print(wrap(Offers.WHY.format(slot=asked, because=one["because"]), 8))
+        if one["blocked"]:
+            print(wrap(Offers.BLOCKED.format(ids=", ".join(one["blocked"])), 8))
+        for slot in one["slots"]:
+            print(f"        {Offers.INSTEAD.format(slot=offers.spoken(slot))}")
+        print()
+        if one["refused"]:
+            print(wrap(one["refused"], 8))
+            print()
+            continue
+        print(wrap(one["body"], 8))
+        print()
+        verdict = actions.send(drafts.read(one), box.message(one["id"]), ask=ask)
+        show(verdict, asked=bool(ask))
+        verdicts.append(verdict)
+        print()
+
+    rule()
+    if not made:
+        print(Offers.NONE)
+    approved = [verdict for verdict in verdicts if verdict.went_ahead]
+    print(f"{len(made)} proposed times answered, "
+          f"{sum(len(one['slots']) for one in made)} alternatives worked out here and none "
+          f"by the model")
+    print(f"{len(verdicts)} put to a person, {len(approved)} approved, "
+          f"outbox/ writes: {len(actions.sent()) - written}")
+    print(wrap(Offers.QUIET, 0))
+
+
 VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated,
          Capability.R4: remembered, Capability.R5: refused, Capability.R6: shown,
-         Capability.X1: summarised, Capability.X2: chased, Capability.X4: accounted}
+         Capability.X1: summarised, Capability.X2: chased, Capability.X3: offered,
+         Capability.X4: accounted}
 
 
 def capability(name: str, args) -> None:
