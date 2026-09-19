@@ -2,6 +2,8 @@
 #
 # - Runs the whole inbox once and records the outcome
 # - The guard reads every message first, so hostile mail never reaches the rules or the model
+# - The guard can be switched off for one pass, which is how the claim that a prompt alone
+#   does not hold is measured rather than asserted
 # - The run it writes is what every capability reads, so a demonstration never repeats the cost
 # - Keeps the meaning-based index current even though the run does not use it, so the
 #   comparison that ruled it out stays reproducible from a clean checkout
@@ -28,11 +30,11 @@ from constants import Capability, Decided, Disposition, Paths, Trace
 from store import load
 
 
-def sorted_out(store, ask=None) -> list:
+def sorted_out(store, ask=None, guarded: bool = True) -> list:
     decided, waiting = {}, []
 
     for message in store.messages:
-        decision = guard.decide(message) or rules.decide(message)
+        decision = (guard.decide(message) if guarded else None) or rules.decide(message)
         if decision is None:
             waiting.append(message)
         else:

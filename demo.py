@@ -15,7 +15,8 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from constants import (Actions, Answer, Capability, Dashboard, Decided, Digest,
-                       Followups, Guard, Kind, Offers, Paths, WIDTH, Why)
+                       Disposition, Followups, Guard, Kind, Offers, Paths, WIDTH,
+                       Why)
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -266,10 +267,38 @@ def blind(artifact: dict) -> None:
     print(f"the {len(silent)} the model would have judged are escalated to Sam instead")
 
 
+def unguarded(artifact: dict) -> None:
+    config = importlib.import_module("config")
+    guard = importlib.import_module("guard")
+    router = importlib.import_module("router")
+    store = importlib.import_module("store")
+
+    box = store.load()
+    hostile = [found.id for found in guard.sweep(box)]
+    decisions = {made.id: made for made in router.sorted_out(box, guarded=False)}
+    reached = sum(1 for made in decisions.values() if made.by is Decided.MODEL)
+
+    print(wrap(Guard.PROMPTED, 2))
+    print(f"        {Guard.ASKED_OF.format(provider=config.PROVIDER, model=config.MODEL, batch=reached)}")
+    print()
+    caught = 0
+    for name in hostile:
+        made = decisions[name]
+        if made.disposition is Disposition.QUARANTINE:
+            caught += 1
+        print(f"        {name}  {made.disposition}, by {made.by}")
+        print(wrap(Guard.UNSEEN if made.by is not Decided.MODEL else made.reason, 14))
+    rule()
+    print(wrap(Guard.SCORE.format(caught=caught, total=len(hostile)), 0))
+
+
 def refused(artifact: dict, args) -> None:
     heading("R5  mail that talks to the assistant is refused, flagged and left in place")
     if args.blind:
         blind(artifact)
+        return
+    if args.prompted:
+        unguarded(artifact)
         return
     if "refusals" not in artifact:
         print(wrap(Guard.STALE, 2))
@@ -549,6 +578,12 @@ def main() -> None:
         "--forget",
         action="store_true",
         help="throw away every recorded preference, so the next run starts with none",
+    )
+    parser.add_argument(
+        "--prompted",
+        action="store_true",
+        help="run the triage with the guard switched off, to measure what the prompt alone "
+             "catches; set PROVIDER and MODEL to choose which model is asked",
     )
     parser.add_argument(
         "--manifest",

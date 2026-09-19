@@ -3,6 +3,8 @@
 # - Proves capabilities.json carries exactly the field names the marking script reads
 # - Proves every number in it was read out of the run artifact rather than typed beside it
 # - Proves every message id named in an observable is really in the mailbox
+# - Proves CAPABILITIES.md and capabilities.json say the same thing about every
+#   capability, because two files listing the same ten will drift otherwise
 # - Runs every command in the manifest, in the order listed, against a copy of only the
 #   files git tracks, because the assignment says a command that does not run is a
 #   capability that was not delivered
@@ -120,6 +122,44 @@ def check_written() -> list[str]:
     return problems
 
 
+def tabled(said: str, name: str) -> list[str]:
+    for line in said.splitlines():
+        if line.startswith(f"| {name} |"):
+            return [cell.strip() for cell in line.strip().strip("|").split("|")]
+    return []
+
+
+def check_readable() -> list[str]:
+    problems = []
+    if not Paths.CAPABILITIES.exists():
+        problems.append(f"{Paths.CAPABILITIES.name} has not been written")
+        return problems
+
+    said = Paths.CAPABILITIES.read_text()
+    made = manifest.build(stored())
+    for field in ("student", "repo"):
+        if made[field] not in said:
+            problems.append(f"{Paths.CAPABILITIES.name} does not carry the {field}")
+    for row in made["capabilities"]:
+        listed = tabled(said, row["id"])
+        if not listed:
+            problems.append(f"{row['id']} is in the manifest and not in the table")
+            continue
+        for field, cell in (("name", 1), ("tier", 2)):
+            if listed[cell] != row[field]:
+                problems.append(f"{row['id']} is {field} {row[field]!r} in the manifest "
+                                f"and {listed[cell]!r} in the table")
+        if not listed[3]:
+            problems.append(f"{row['id']} is in the table with no claim beside it")
+    if Paths.MANIFEST.name not in said:
+        problems.append(f"{Paths.CAPABILITIES.name} never points a reader at "
+                        f"{Paths.MANIFEST.name}")
+    for name in (str(one) for one in Disposition):
+        if name not in said:
+            problems.append(f"the disposition {name} is never defined for a reader")
+    return problems
+
+
 def check_runs() -> list[str]:
     problems = []
     with tempfile.TemporaryDirectory() as room:
@@ -154,6 +194,7 @@ def run() -> bool:
                         ("numbers from the run", check_numbers()),
                         ("ids that exist", check_truthful(store)),
                         ("written out", check_written()),
+                        ("readable and in step", check_readable()),
                         ("every command runs", check_runs())):
         print(f"  {'FAIL' if found else 'pass'}  {name}")
         problems.extend(found)
