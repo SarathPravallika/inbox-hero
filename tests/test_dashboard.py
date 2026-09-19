@@ -3,6 +3,7 @@
 # - Proves the three panes are built from a completed run and never written by hand
 # - Proves a demand from mail the system escalated is shown as claimed, not as a bill due
 # - Proves every commitment on the calendar cites messages that are really in the inbox
+# - Proves anything dated that would not resolve is named on the page, not merely counted
 
 import json
 import tempfile
@@ -132,6 +133,9 @@ def check_calendar(store) -> list[str]:
         problems.append(f"{len(made['unplaced'])} entries were left unplaced, not 1")
     if "1 dated thing " not in dashboard.unplaced_line(made):
         problems.append(f"the unplaced line reads {dashboard.unplaced_line(made)!r}")
+    for row in made["unplaced"]:
+        if not row["unresolved"]:
+            problems.append(f"{row['id']} is unplaced and does not say why not")
 
     for row in made["commitments"]:
         if not row["cited"]:
@@ -175,6 +179,11 @@ def check_written(store) -> list[str]:
             shown = ", ".join(row["cited"])
             if f"<span class='ci'>{shown}</span>" not in text:
                 problems.append(f"{row['id']} is on the calendar without {shown} beside it")
+        for row in made["unplaced"]:
+            for wanted in (row["what"], row["said"], row["unresolved"]):
+                if wanted not in text:
+                    problems.append(f"{row['id']} could not be placed and the page does "
+                                    f"not say {wanted!r}")
         if made["conflicts"][0]["called"] not in text:
             problems.append("the conflict is not called out on the page")
         if "http://" in text or "https://" in text:

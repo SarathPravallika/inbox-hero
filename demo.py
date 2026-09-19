@@ -14,8 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from constants import (Answer, Capability, Dashboard, Decided, Guard, Kind, Paths,
-                       WIDTH, Why)
+from constants import (Answer, Capability, Dashboard, Decided, Digest, Followups,
+                       Guard, Kind, Paths, WIDTH, Why)
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -300,7 +300,11 @@ def shown(artifact: dict, args) -> None:
             print(f"        {when} {row['at'] or '     ':<6} {row['standing']:<14}"
                   f"{row['what'][:34]:<36}{', '.join(row['cited'])}")
     if made["unplaced"]:
+        print()
         print(f"        {dashboard.unplaced_line(made)}")
+        for row in made["unplaced"]:
+            print(f"        {', '.join(row['cited'])}  {row['what'][:26]:<28}"
+                  f"{row['unresolved']}")
     rule()
     print(f"{len(made['pending'])} pending, {len(made['flagged'])} flagged, "
           f"{len(made['commitments'])} commitments, {len(made['conflicts'])} conflicts")
@@ -340,9 +344,70 @@ def accounted(artifact: dict, args) -> None:
     print(Why.CLOSE.format(sections=len(told), files=len(why.files(told))))
 
 
+def summarised(artifact: dict, args) -> None:
+    heading("X1  the long conversations, each down to what is still open")
+    if "digests" not in artifact:
+        print(wrap(Digest.STALE, 2))
+        return
+
+    made = [one for one in artifact["digests"]
+            if args.msg is None or args.msg == one["thread"] or args.msg in one["ids"]]
+    for one in made:
+        print(f"  {one['thread']}  "
+              f"{Digest.SPAN.format(count=len(one['ids']), first=one['ids'][0], last=one['ids'][-1])}")
+        if one["dropped"]:
+            print(wrap(one["dropped"], 8))
+            print()
+            continue
+        print(wrap(one["summary"], 8))
+        print()
+        if one["needs"]:
+            print(f"        {Digest.NEEDS.format(id=one['needs'])}")
+            print(wrap(f'"{one["asked"]}"', 8))
+        else:
+            print(f"        {Digest.NOTHING}")
+        if one["settled"]:
+            print(wrap(Digest.CLOSED.format(ids=", ".join(one["settled"])), 8))
+        print()
+    rule()
+    waiting = [one for one in made if one["needs"]]
+    covered = sum(len(one["ids"]) for one in made)
+    print(f"{len(made)} conversations of {Digest.SHORTEST} messages or more, "
+          f"{covered} messages read, {len(waiting)} still waiting on Sam")
+
+
+def chased(artifact: dict, args) -> None:
+    heading("X2  mail Sam sent that nobody has answered")
+    if "followups" not in artifact:
+        print(wrap(Followups.STALE, 2))
+        return
+
+    made = [one for one in artifact["followups"] if args.msg in (None, one["id"])]
+    waiting = [one for one in made if one["chased"]]
+    for one in waiting:
+        print(f"  {one['id']}  to {one['to']}, sent {one['sent'][:10]}, "
+              f"{Followups.WAITED.format(days=one['waiting'])}")
+        print(f"        {one['subject']}")
+        print(wrap(one["refused"] or one["body"], 8))
+        print()
+
+    left = [one for one in made if not one["chased"]]
+    if left:
+        print("  left alone")
+        for one in left:
+            print(f"        {one['id']}  {one['why']}")
+        print()
+    rule()
+    if not waiting:
+        print(Followups.NONE)
+    print(f"{len(made)} messages Sam sent, {len(waiting)} still waiting, "
+          f"{len(left)} left alone")
+    print(wrap(Followups.GATED, 0))
+
+
 VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated,
          Capability.R4: remembered, Capability.R5: refused, Capability.R6: shown,
-         Capability.X4: accounted}
+         Capability.X1: summarised, Capability.X2: chased, Capability.X4: accounted}
 
 
 def capability(name: str, args) -> None:

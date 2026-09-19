@@ -4,6 +4,8 @@
 
 import re
 from constants import Decided, Disposition, Drafts, Kind
+from digest import Digest
+from followups import Followup
 from memory import remember
 from router import build, claimed, counted, replies, sorted_out
 from store import load
@@ -16,6 +18,12 @@ BY_MODEL = 40
 HOSTILE = {"m017", "m024", "m039", "m047"}
 LEGAL = {"m018", "m048", "m055"}
 DIARY = ()
+DIGESTS = (Digest(thread="t-launch", ids=("m026", "m030"), summary="launch week",
+                  needs="m030", asked="can you approve the final pricing copy by the 12th?",
+                  settled=("m026",)),)
+CHASES = (Followup(id="m044", to="priya@paperjet.io", subject="Re: contractor invoice",
+                   sent="2026-09-02T17:20:00", waiting=7, chased=True,
+                   body="Any update on the contractor invoice?"),)
 COPIES = "priya@paperjet.io"
 STANDING = ()
 
@@ -94,7 +102,8 @@ def check_artifact(store, decisions) -> list[str]:
     made = replies(store, decisions, STANDING, ask=lambda system, text, shape:
                    {"body": "drafted by the fake", "cited": ["m010"]})
     recorded = claimed(store, decisions)
-    artifact = build(store, decisions, made, standing, recorded, DIARY, "fake", "fake-model")
+    artifact = build(store, decisions, made, standing, recorded, DIARY, DIGESTS, CHASES,
+                     "fake", "fake-model")
     if len(artifact["drafts"]) != len(made):
         problems.append("the artifact lost a draft")
     for row in artifact["drafts"]:
@@ -106,9 +115,13 @@ def check_artifact(store, decisions) -> list[str]:
         problems.append(f"the copying rule reached {sorted(row['id'] for row in lawyers)}")
     if any(row["copy"] != [COPIES] for row in lawyers):
         problems.append(f"a legal message is copied to somebody other than {COPIES}")
-    for field in ("commitments", "conflicts"):
+    for field in ("commitments", "conflicts", "digests", "followups"):
         if field not in artifact:
             problems.append(f"the artifact carries no {field}")
+    if [row["thread"] for row in artifact["digests"]] != [one.thread for one in DIGESTS]:
+        problems.append("the artifact lost a digest")
+    if [row["id"] for row in artifact["followups"]] != [one.id for one in CHASES]:
+        problems.append("the artifact lost a follow-up")
     if artifact["messages_processed"] != COUNT:
         problems.append(f"the artifact says {artifact['messages_processed']} messages")
     if artifact["rule_handled"] != BY_RULE + BY_GUARD:

@@ -5,6 +5,8 @@
 # - Flagged is everything it would not act on, with what was attempted beside what it did
 # - Commitments is a month grid, and every entry on it carries the message ids it came from
 #   on its own line, because a citation in a hover tooltip is no citation on a printed page
+# - Anything dated that could not be placed is named underneath with what the message said
+#   and why it would not resolve, so a count never stands in for the thing it counted
 # - An obligation taken from mail the system escalated is shown as claimed, not accepted,
 #   because a demand for a wire transfer should never read like a bill that is due
 
@@ -182,11 +184,23 @@ def grids(made: dict) -> str:
     return "".join(out)
 
 
+def missing(made: dict) -> str:
+    if not made["unplaced"]:
+        return ""
+    head = "".join(f"<th>{cell(name)}</th>" for name in Dashboard.UNPLACED_HEAD)
+    out = [f"<p class='note'>{cell(unplaced_line(made))}</p>", f"<table><tr>{head}</tr>"]
+    for row in made["unplaced"]:
+        out.append(f"<tr><td class='id'>{cell(', '.join(row['cited']))}</td>"
+                   f"<td>{cell(row['what'])}</td><td>{cell(row['said'])}</td>"
+                   f"<td>{cell(row['unresolved'])}</td></tr>")
+    out.append("</table>")
+    return "".join(out)
+
+
 def calendar_pane(made: dict) -> str:
     out = [f"<p class='clash'>{cell(one['called'])}</p>" for one in made["conflicts"]]
     out.append(grids(made))
-    if made["unplaced"]:
-        out.append(f"<p class='note'>{cell(unplaced_line(made))}</p>")
+    out.append(missing(made))
     return pane(3, Dashboard.PANES[2], Dashboard.SAYS[2], "".join(out))
 
 

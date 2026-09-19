@@ -6,6 +6,8 @@
 from enum import StrEnum
 from pathlib import Path
 
+SNAPSHOT = "2026-09-09"
+
 
 class Paths:
     ROOT = Path(__file__).resolve().parent.parent
@@ -227,7 +229,7 @@ class Guard:
 
 
 class Commitments:
-    TODAY = "2026-09-09"
+    TODAY = SNAPSHOT
     BATCH = 15
     DATED = (r"\b(?:\d{1,2}(?:st|nd|rd|th)\b|mon|tues|wednes|thurs|fri|satur|sun|january"
              r"|february|march|april|may|june|july|august|september|october|november"
@@ -261,6 +263,8 @@ class Dashboard:
     NOTHING = "no reply written"
     UNACCEPTED = "claimed"
     UNPLACED = "{count} dated thing{s} could not be placed on the calendar"
+    UNPLACED_HEAD = ("message", "what it is", "what the message said",
+                     "why it is not on the calendar")
     NONE = "nothing"
     TITLE = "inboxHero"
     LEDE = "Three panes from one run. Nothing here was written by hand."
@@ -368,6 +372,47 @@ class Actions:
     ABSENT = "there is no message {id} in the mailbox"
     HELD = "the trash holds nothing for {id}"
     ALREADY = "{id} is in the mailbox already"
+
+
+class Digest:
+    SHORTEST = 3
+    WITHHELD = "[withheld]"
+    QUESTION = r"[^.!?\n]*\?"
+    NOTHING = "nothing in it is waiting on Sam"
+    UNQUOTED = "it is the open question and the message does not put it as one"
+    STRANGER = "the model named {id}, which is not in this conversation"
+    SPOKE = "the model named {id}, which Sam wrote himself"
+    LEAKED = "the summary carried a credential, so it was dropped"
+    INVENTED = "the summary named {ids}, which this conversation does not contain"
+    SPAN = "{count} messages, {first} to {last}"
+    NEEDS = "still needs Sam: {id}"
+    CLOSED = "already answered in the thread: {ids}"
+    STALE = ("this run was written before the digests existed, so it records none. Run "
+             "`python demo.py --cap X1 --fresh` and try again.")
+
+
+class Followups:
+    TODAY = SNAPSHOT
+    PATIENCE = 3
+    ROOT = 5
+    BATCH = 5
+    NUDGE = frozenset(
+        "following follow followed chase chasing nudge gentle wondering wondered wonder "
+        "still any update updates news word since sent send asked asking ask bumping bump "
+        "top mind whenever chance had holding hold blocked blocking moment status where "
+        "stands standing progress waiting wait heard hearing anything something".split())
+    INVENTED = "the chase reached for words the original never used"
+    SILENT = "the model wrote nothing to chase with"
+    ANSWERED = "{by} answered it, so there is nothing to chase"
+    SELF = "Sam wrote it to himself, so there is nobody to chase"
+    RECENT = "it has waited {days} days, and a chase waits for {patience}"
+    HELD = "the run quarantined it, and nothing quarantined is chased"
+    WAITED = "{days} days with no answer"
+    NONE = "nothing Sam sent is still waiting on anybody"
+    GATED = ("a chase is a send, so nothing here leaves the machine without going through "
+             "the same gate as any other reply")
+    STALE = ("this run was written before the follow-ups existed, so it records none. Run "
+             "`python demo.py --cap X2 --fresh` and try again.")
 
 
 class Trace:

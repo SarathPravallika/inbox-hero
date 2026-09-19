@@ -7,13 +7,17 @@
 #   comparison that ruled it out stays reproducible from a clean checkout
 # - Applies the standing instructions an earlier process left behind, then records the ones
 #   this run found, so a preference only ever takes effect on a later run
+# - Summarises the long conversations and looks for mail nobody answered in the same pass,
+#   so every capability still reads one artifact rather than repeating the cost
 
 import json
 from dataclasses import asdict
 
 import classify
 import commitments
+import digest
 import drafts
+import followups
 import guard
 import memory
 import retrieve
@@ -52,8 +56,8 @@ def counted(decisions, by: Decided) -> int:
     return sum(1 for decision in decisions if decision.by is by)
 
 
-def build(store, decisions, written_drafts, standing, recorded, diary, provider: str,
-          model: str) -> dict:
+def build(store, decisions, written_drafts, standing, recorded, diary, digests, chases,
+          provider: str, model: str) -> dict:
     return {
         "at": tracing.stamp(),
         "provider": provider,
@@ -81,6 +85,12 @@ def build(store, decisions, written_drafts, standing, recorded, diary, provider:
         "conflicts": [{"ids": [one.id, other.id], "when": one.when, "at": one.at,
                        "called": commitments.clash((one, other))}
                       for one, other in commitments.clashes(diary)],
+        "digests": [{"thread": one.thread, "ids": list(one.ids), "summary": one.summary,
+                     "needs": one.needs, "asked": one.asked, "settled": list(one.settled),
+                     "dropped": one.dropped} for one in digests],
+        "followups": [{"id": one.id, "to": one.to, "subject": one.subject, "sent": one.sent,
+                       "waiting": one.waiting, "chased": one.chased, "why": one.why,
+                       "body": one.body, "refused": one.refused} for one in chases],
     }
 
 
@@ -110,6 +120,10 @@ def written(artifact: dict) -> dict:
         tracing.record(Capability.R4, "remembered", **renamed(one, Trace.FIRST))
     for one in artifact["refused_preferences"]:
         tracing.record(Capability.R4, "refusal", **renamed(one, Trace.FIRST))
+    for one in artifact["digests"]:
+        tracing.record(Capability.X1, "digest", **one)
+    for one in artifact["followups"]:
+        tracing.record(Capability.X2, "followup", **one)
     Paths.RUN.write_text(json.dumps(artifact, indent=2) + "\n")
     return artifact
 
@@ -126,8 +140,10 @@ def run(ask=None) -> dict:
     recorded = claimed(store, decisions)
     memory.keep(recorded)
     diary = commitments.gather(store, decisions, ask=ask)
+    digests = digest.gather(store, ask=ask)
+    chases = followups.gather(store, decisions, ask=ask)
     return written(build(store, decisions, written_drafts, standing, recorded, diary,
-                         config.PROVIDER, config.MODEL))
+                         digests, chases, config.PROVIDER, config.MODEL))
 
 
 def stored() -> dict:
