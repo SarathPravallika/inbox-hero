@@ -1,6 +1,6 @@
 # cert-aai-2026-06-0061  Sarath Chandra
 #
-# - The one command a grader runs to see any capability
+# - The one command that demonstrates any capability
 # - Holds a completed run open so ten demonstrations cost one run of model calls
 # - Refuses to start work if the model provider has not been configured
 # - Asks about every irreversible action when a person is there to answer, and when nobody

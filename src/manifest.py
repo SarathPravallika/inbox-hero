@@ -1,6 +1,6 @@
 # cert-aai-2026-06-0061  Sarath Chandra
 #
-# - Writes capabilities.json, which is the file the marking script reads
+# - Writes capabilities.json, the machine-readable half of the manifest
 # - Every number in it is read out of the run artifact and every classification out of the
 #   code, so the manifest cannot claim something the commands do not print
 # - The reversibility lists are built from Gate.RISK rather than typed beside it, the same

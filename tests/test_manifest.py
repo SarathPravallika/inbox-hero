@@ -1,6 +1,6 @@
 # cert-aai-2026-06-0061  Sarath Chandra
 #
-# - Proves capabilities.json carries exactly the field names the marking script reads
+# - Proves capabilities.json carries exactly the field names the sample specifies
 # - Proves every number in it was read out of the run artifact rather than typed beside it
 # - Proves the counts a capability claims are the counts its own command prints, which is
 #   the one thing a reader can check in a second and the one that must never be wrong

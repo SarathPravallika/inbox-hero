@@ -95,7 +95,7 @@ rather than dropped, because a founder's inbox routes everything back to the fou
 
 **Reversible and irreversible.** The classification is code, `Gate.RISK`, and a test fails if
 any action is missing from it. `send` is irreversible: the file in `outbox/` stands for a
-message that has left our control. `delete` is **reversible** here, because `actions.remove()`
+message that has left the system. `delete` is **reversible** here, because `actions.remove()`
 writes the whole message to `trash/` before it touches the mailbox, and that order is
 deliberate — a crash between the two writes leaves the message recoverable. `restore`,
 drafting and labelling change nothing outside the run artifact.
