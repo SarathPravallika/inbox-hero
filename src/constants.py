@@ -15,6 +15,7 @@ class Paths:
     RUN = ROOT / "run.json"
     VECTORS = ROOT / "vectors.json"
     TRACE = ROOT / "trace.jsonl"
+    MEMORY = ROOT / "memory.json"
     OUTBOX = ROOT / "outbox"
     TRASH = ROOT / "trash"
     APPROVALS = ROOT / "approvals.jsonl"
@@ -39,6 +40,11 @@ class Action(StrEnum):
     SEND = "send"
     DELETE = "delete"
     RESTORE = "restore"
+
+
+class Kind(StrEnum):
+    SCHEDULING = "scheduling"
+    COPYING = "copying"
 
 
 class Risk(StrEnum):
@@ -166,6 +172,17 @@ class Gate:
     UNASKED = "        there is nobody at the keyboard, so this counts as no"
     UNTRIAGED = "nothing is known about this message yet, so it cannot be deleted"
     PROTECTED = "quarantined mail is the record of an attack and is never deleted"
+
+
+class Memory:
+    CLOCK = r"\b\d{1,2}:\d{2}\s*(?:am|pm)\b"
+    SHORTEST = 5
+    MEETINGS = "meetings"
+    SOURCE = "email:{id}"
+    WANTED = {Kind.SCHEDULING: "a time of day",
+              Kind.COPYING: "a correspondent this mailbox has heard from"}
+    SHAPELESS = "a {kind} preference has to name {wanted}, and this one names none"
+    UNKNOWN = "there is no kind of preference called {kind}"
 
 
 class Actions:
