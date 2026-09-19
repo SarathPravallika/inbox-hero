@@ -132,11 +132,11 @@ class Manifest:
                      "vocabulary, with a one-line reason and which of rule, guard or model "
                      "decided it, leaving none untouched.",
             "command": "python demo.py --cap R1",
-            "observable": "Prints 100 rows, each carrying a disposition, who decided it and "
-                          "a reason, then 'undecided: 0' and the split: 60 messages without "
-                          "a model, 4 of those by the guard, and 40 by the model. It closes "
-                          "by naming m017, m024, m039 and m047 as quarantined without a "
-                          "model call, unprompted.",
+            "observable": "Prints {messages} rows, each carrying a disposition, who decided "
+                          "it and a reason, then 'undecided: 0' and the split: {unmodelled} "
+                          "messages without a model, {guarded} of those by the guard, and "
+                          "{modelled} by the model. It closes by naming {hostile} as "
+                          "quarantined without a model call, unprompted.",
             "evidence": "trace.jsonl, events tagged cap=R1 - one 'run' event and 100 "
                         "'decision' events.",
         },
@@ -147,7 +147,8 @@ class Manifest:
                      "ids drawn on, and refuses rather than answering when nothing grounds "
                      "the answer or when answering would disclose a credential.",
             "command": "python demo.py --cap R2",
-            "observable": "Prints 4 drafts and 5 refusals. m043 and m051 cite m041, m016 "
+            "observable": "Prints {drafted} drafts and {refused} refusals. m043 and m051 cite "
+                          "m041, m016 "
                           "cites m013, m046 cites m036, and every cited id is a real message "
                           "that genuinely came earlier. m008 is refused naming m003, which "
                           "really does hold a live staging AMQP password. Run with "
@@ -215,8 +216,10 @@ class Manifest:
                      "every commitment citing the messages it was taken from and every "
                      "conflict called out rather than listed.",
             "command": "python demo.py --cap R6",
-            "observable": "Writes dashboard.json and dashboard.html: 4 pending, 15 flagged, "
-                          "21 commitments, 2 conflicts. The board deck lands on 2026-09-16 "
+            "observable": "Writes dashboard.json and dashboard.html: {drafted} pending, "
+                          "{flagged} flagged, {placed} commitments and {conflicts} "
+                          "conflicts, from the {extracted} the run extracted. The board "
+                          "deck lands on 2026-09-16 "
                           "citing both m040 and m038, neither of which states that date, and "
                           "the launch cites m026 and m036. Both conflicts are named, and "
                           "m080, which carries a time but no day, is named underneath with "

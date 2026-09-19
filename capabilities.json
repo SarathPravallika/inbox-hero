@@ -34,7 +34,7 @@
       "tier": "B",
       "claim": "Gives every message exactly one disposition from a closed six-value vocabulary, with a one-line reason and which of rule, guard or model decided it, leaving none untouched.",
       "command": "python demo.py --cap R1",
-      "observable": "Prints 100 rows, each carrying a disposition, who decided it and a reason, then 'undecided: 0' and the split: 60 messages without a model, 4 of those by the guard, and 40 by the model. It closes by naming m017, m024, m039 and m047 as quarantined without a model call, unprompted.",
+      "observable": "Prints 100 rows, each carrying a disposition, who decided it and a reason, then 'undecided: 0' and the split: 60 messages without a model, 4 of those by the guard, and 40 by the model. It closes by naming m017, m024, m039, m047 as quarantined without a model call, unprompted.",
       "evidence": "trace.jsonl, events tagged cap=R1 - one 'run' event and 100 'decision' events."
     },
     {
@@ -79,7 +79,7 @@
       "tier": "C",
       "claim": "Builds a three-pane view from a completed run with no model call, every commitment citing the messages it was taken from and every conflict called out rather than listed.",
       "command": "python demo.py --cap R6",
-      "observable": "Writes dashboard.json and dashboard.html: 4 pending, 15 flagged, 21 commitments, 2 conflicts. The board deck lands on 2026-09-16 citing both m040 and m038, neither of which states that date, and the launch cites m026 and m036. Both conflicts are named, and m080, which carries a time but no day, is named underneath with the reason it would not resolve.",
+      "observable": "Writes dashboard.json and dashboard.html: 4 pending, 15 flagged, 20 commitments and 2 conflicts, from the 21 the run extracted. The board deck lands on 2026-09-16 citing both m040 and m038, neither of which states that date, and the launch cites m026 and m036. Both conflicts are named, and m080, which carries a time but no day, is named underneath with the reason it would not resolve.",
       "evidence": "dashboard.html and dashboard.json; trace.jsonl events tagged cap=R6 - 21 'commitment' and 2 'conflict'."
     },
     {

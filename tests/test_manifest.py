@@ -2,6 +2,8 @@
 #
 # - Proves capabilities.json carries exactly the field names the marking script reads
 # - Proves every number in it was read out of the run artifact rather than typed beside it
+# - Proves the counts a capability claims are the counts its own command prints, which is
+#   the one thing a reader can check in a second and the one that must never be wrong
 # - Proves every message id named in an observable is really in the mailbox
 # - Proves the README carries the repository link, the four Final Report answers and
 #   every design choice the submission guidelines ask it to cover
@@ -28,6 +30,7 @@ from store import load
 from utils import heading, rule
 
 LOOKS_LIKE_AN_ID = r"\bm\d{3}\b"
+TALLY = r"(\d+) pending, (\d+) flagged, (\d+) commitments, (\d+) conflicts"
 SKIP = ("venv/", "assignment-instructions/FN_")
 UNPACKED = ("venv", ".git", "__pycache__", ".pytest_cache")
 DERIVED = ("mailbox.json", "memory.json", ".env")
@@ -205,6 +208,27 @@ def check_reported() -> list[str]:
     return problems
 
 
+def check_tally() -> list[str]:
+    problems = []
+    numbers = manifest.counted(stored())
+    done = subprocess.run([sys.executable, "demo.py", "--cap", "R6"], cwd=Paths.ROOT,
+                          capture_output=True, text=True, timeout=Manifest.TIMEOUT)
+    found = re.search(TALLY, done.stdout)
+    if not found:
+        problems.append("--cap R6 no longer closes with a tally the manifest can be "
+                        "checked against")
+        return problems
+    for printed, (what, wanted) in zip(found.groups(),
+                                       (("pending", numbers["drafted"]),
+                                        ("flagged", numbers["flagged"]),
+                                        ("commitments", numbers["placed"]),
+                                        ("conflicts", numbers["conflicts"]))):
+        if int(printed) != wanted:
+            problems.append(f"--cap R6 prints {printed} {what} and the manifest was built "
+                            f"saying {wanted}")
+    return problems
+
+
 def check_runs() -> list[str]:
     problems = []
     with tempfile.TemporaryDirectory() as room:
@@ -241,6 +265,7 @@ def run() -> bool:
                         ("written out", check_written()),
                         ("readable and in step", check_readable()),
                         ("reported on", check_reported()),
+                        ("the tally agrees", check_tally()),
                         ("every command runs", check_runs())):
         print(f"  {'FAIL' if found else 'pass'}  {name}")
         problems.extend(found)
