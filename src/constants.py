@@ -385,6 +385,8 @@ class Actions:
     ABSENT = "there is no message {id} in the mailbox"
     HELD = "the trash holds nothing for {id}"
     ALREADY = "{id} is in the mailbox already"
+    CLEARED = ("cleared {sent} replies from outbox/, {held} messages from trash/ and "
+               "{logged} approval records, so what follows is the evidence of one run")
 
 
 class Digest:

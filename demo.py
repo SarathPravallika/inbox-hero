@@ -14,8 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from constants import (Answer, Capability, Dashboard, Decided, Digest, Followups,
-                       Guard, Kind, Offers, Paths, WIDTH, Why)
+from constants import (Actions, Answer, Capability, Dashboard, Decided, Digest,
+                       Followups, Guard, Kind, Offers, Paths, WIDTH, Why)
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -41,6 +41,18 @@ def ensure_run(fresh: bool) -> dict:
         return router.stored()
     keyed()
     return router.run()
+
+
+def cleaned() -> None:
+    actions = importlib.import_module("actions")
+    gate = importlib.import_module("gate")
+    sent, held, logged = len(actions.sent()), len(actions.held()), len(gate.records())
+
+    for folder, suffix in ((Paths.OUTBOX, Actions.SUFFIX), (Paths.TRASH, Actions.KEPT)):
+        for path in folder.glob(f"*{suffix}") if folder.exists() else ():
+            path.unlink()
+    gate.start()
+    print(Actions.CLEARED.format(sent=sent, held=held, logged=logged))
 
 
 def zeroed(artifact: dict, args) -> None:
@@ -524,6 +536,12 @@ def main() -> None:
         help="throw away every recorded preference, so the next run starts with none",
     )
     parser.add_argument(
+        "--clean",
+        action="store_true",
+        help="empty outbox/ and trash/ and truncate approvals.jsonl, so the evidence "
+             "committed for a run is only ever from that run",
+    )
+    parser.add_argument(
         "--test",
         nargs="?",
         const="all",
@@ -535,6 +553,11 @@ def main() -> None:
 
     if args.test:
         raise SystemExit(0 if sibling("tests", "runner").run(args.test) else 1)
+
+    if args.clean:
+        cleaned()
+        if not args.cap:
+            return
 
     if args.forget:
         importlib.import_module("memory").forget()
