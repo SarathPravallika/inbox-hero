@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# inboxHero working state, rebuilt from assignment-instructions/inbox.json when absent
+mailbox.json

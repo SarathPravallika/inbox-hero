@@ -2,6 +2,8 @@
 #
 # - Loads the inbox and makes it answerable by message and by conversation
 # - Messages cannot be edited once loaded, so nothing can rewrite mail during a run
+# - Works from its own copy of the mailbox, so the inbox the assignment shipped is never
+#   written to and is always there to rebuild from
 
 import json
 from dataclasses import dataclass
@@ -49,5 +51,11 @@ def read(record: dict) -> Message:
     return Message(**{Inbox.FIELDS.get(key, key): value for key, value in record.items()})
 
 
-def load(path: Path = Paths.INBOX) -> Store:
-    return Store(read(record) for record in json.loads(path.read_text()))
+def mailbox() -> Path:
+    if not Paths.MAILBOX.exists():
+        Paths.MAILBOX.write_bytes(Paths.INBOX.read_bytes())
+    return Paths.MAILBOX
+
+
+def load(path: Path = None) -> Store:
+    return Store(read(record) for record in json.loads((path or mailbox()).read_text()))

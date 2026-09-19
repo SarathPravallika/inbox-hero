@@ -11,9 +11,13 @@ class Paths:
     ROOT = Path(__file__).resolve().parent.parent
 
     INBOX = ROOT / "assignment-instructions" / "inbox.json"
+    MAILBOX = ROOT / "mailbox.json"
     RUN = ROOT / "run.json"
     VECTORS = ROOT / "vectors.json"
     TRACE = ROOT / "trace.jsonl"
+    OUTBOX = ROOT / "outbox"
+    TRASH = ROOT / "trash"
+    APPROVALS = ROOT / "approvals.jsonl"
 
 
 class Inbox:
@@ -29,6 +33,25 @@ class Disposition(StrEnum):
     DELEGATE = "delegate"
     ESCALATE = "escalate"
     QUARANTINE = "quarantine"
+
+
+class Action(StrEnum):
+    SEND = "send"
+    DELETE = "delete"
+    RESTORE = "restore"
+
+
+class Risk(StrEnum):
+    REVERSIBLE = "reversible"
+    IRREVERSIBLE = "irreversible"
+
+
+class Answer(StrEnum):
+    APPROVED = "approved"
+    DECLINED = "declined"
+    REFUSED = "refused"
+    DRY = "dry-run"
+    UNATTENDED = "unattended"
 
 
 class Decided(StrEnum):
@@ -129,6 +152,23 @@ class Retrieval:
         "can could would will shall have has had he she they them their there here what which "
         "who when where why how all any some such only own same so than too very just now get "
         "got need needs please thanks thank hi hello sam".split())
+
+
+class Gate:
+    RISK = {Action.SEND: Risk.IRREVERSIBLE,
+            Action.DELETE: Risk.REVERSIBLE,
+            Action.RESTORE: Risk.REVERSIBLE}
+    APPROVAL = frozenset({Action.SEND, Action.DELETE})
+    ASKED = "  Approve this {action}? [y/N] "
+    NOTHING = "nothing was written"
+    DECLINED = "declined, nothing was written"
+    SHOWN = "would write {target}"
+
+
+class Actions:
+    SUFFIX = ".txt"
+    HEADERS = ("To", "From", "Subject", "In-Reply-To", "Grounded-In")
+    UNSENDABLE = "a refused draft has no body to send"
 
 
 class Model:
