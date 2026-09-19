@@ -12,11 +12,14 @@ class Paths:
 
     INBOX = ROOT / "assignment-instructions" / "inbox.json"
     RUN = ROOT / "run.json"
+    VECTORS = ROOT / "vectors.json"
     TRACE = ROOT / "trace.jsonl"
 
 
 class Inbox:
     FIELDS = {"from": "sender"}
+    OWNER = "sam@paperjet.io"
+    DOMAIN = "paperjet.io"
 
 
 class Disposition(StrEnum):
@@ -73,8 +76,34 @@ class Classify:
 
 
 class Drafts:
-    UNGROUNDED = "nothing earlier in this thread grounds an answer"
-    INVENTED = "the draft cited nothing that was actually in the thread"
+    UNGROUNDED = "no earlier mail was found that could bear on this at all"
+    INVENTED = "the draft cited nothing it was actually given"
+    UNANSWERED = "the earlier mail does not answer this one"
+
+    PUBLIC = ("quote", "one line", "a line", "on the record", "for publication",
+              "short piece", "our piece", "our story", "coverage", "press")
+    PUBLISHED = "no part of this draft may describe the company or the product"
+
+    DESCRIBES = r"\b(?:paperjet|our product|the product|our platform|we)\s+(?:is|are|does|" \
+                r"do|helps?|offers?|provides?|streamlines?|lets?|makes?)\b"
+
+    DEFERRAL = frozenset(
+        "yes true correct cannot unable afraid sorry apologies confirm confirmed confirming "
+        "commit promise answer reply respond response revert return follow separately "
+        "shortly soon later time date slot calendar schedule check checking look looking "
+        "know let once able still yet more further details detail update touch back come "
+        "coming regarding about sure good well great glad hear hearing see seeing sounds "
+        "timing catch nice tell telling say saying love lovely happy keen meet definitely "
+        "absolutely course anyway meanwhile am out up ping drop line sort figure plan".split())
+    PROPOSES = r"\b\d{1,2}:\d{2}\s*(?:am|pm)\b"
+    DECLINES = ("cannot", "can not", "can't", "unable", "not able", "does not work",
+                "doesn't work", "decline", "afraid", "will not", "won't")
+    ACCEPTED = ("a reply that accepts a proposed time cannot be drafted, "
+                "Sam's calendar is not in the inbox")
+
+    CONFIDENTIAL = ("board", "legal", "term sheet", "salary", "wire transfer", "invoice",
+                    "contract", "amendment", "signature", "remittance", "pricing",
+                    "discount", "revenue")
 
     SECRETS = (
         r"://[^/\s:]+:[^/\s@]+@",
@@ -88,11 +117,25 @@ class Drafts:
     )
 
 
+class Retrieval:
+    CANDIDATES = 3
+    EMBED_MODEL = "gemini-embedding-001"
+    DIMENSIONS = 768
+    EMBED_BATCH = 25
+    MINIMUM_WORD = 3
+    STOPWORDS = frozenset(
+        "the a an and or but if is are was were be been being to of in on at for with from "
+        "this that these those it its you your yours i me my we our us as not no do did does "
+        "can could would will shall have has had he she they them their there here what which "
+        "who when where why how all any some such only own same so than too very just now get "
+        "got need needs please thanks thank hi hello sam".split())
+
+
 class Model:
     TEMPERATURE = 0.0
     GAP_SECONDS = 4
     RETRIES = 3
-    BACKOFF_SECONDS = 20
+    WAIT_SECONDS = 65
     TIMEOUT_SECONDS = 180
 
 

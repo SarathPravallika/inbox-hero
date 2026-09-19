@@ -7,7 +7,7 @@ import json
 import time
 import urllib.request
 import config
-from constants import Model
+from constants import Model, Retrieval
 
 CLIENT = None
 LAST = 0.0
@@ -64,6 +64,21 @@ def ollama(system: str, text: str, shape: dict) -> list:
         return json.loads(json.loads(answer.read())["message"]["content"])
 
 
+def vectorise(texts: list[str]) -> list[list[float]]:
+    from google.genai import types
+
+    answer = connect().models.embed_content(
+        model=Retrieval.EMBED_MODEL,
+        contents=texts,
+        config=types.EmbedContentConfig(output_dimensionality=Retrieval.DIMENSIONS),
+    )
+    return [list(one.values) for one in answer.embeddings]
+
+
+def embed(texts: list[str]) -> list[list[float]]:
+    return patiently(vectorise, texts)
+
+
 PROVIDERS = {"gemini": gemini, "ollama": ollama}
 
 
@@ -72,17 +87,20 @@ def busy(trouble: Exception) -> bool:
     return any(sign in said for sign in ("429", "RESOURCE_EXHAUSTED", "503", "UNAVAILABLE"))
 
 
+def patiently(work, *given):
+    for attempt in range(Model.RETRIES):
+        pace()
+        try:
+            return work(*given)
+        except Exception as trouble:
+            if attempt == Model.RETRIES - 1 or not busy(trouble):
+                raise
+            time.sleep(Model.WAIT_SECONDS)
+
+
 def ask(system: str, text: str, shape: dict) -> list:
     provider = PROVIDERS.get(config.PROVIDER)
     if provider is None:
         raise RuntimeError(
             f"PROVIDER is {config.PROVIDER!r}, not one of {', '.join(PROVIDERS)}")
-
-    for attempt in range(Model.RETRIES):
-        pace()
-        try:
-            return provider(system, text, shape)
-        except Exception as trouble:
-            if attempt == Model.RETRIES - 1 or not busy(trouble):
-                raise
-            time.sleep(Model.BACKOFF_SECONDS * (attempt + 1))
+    return patiently(provider, system, text, shape)

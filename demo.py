@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
 from constants import Capability, Paths
-from utils import heading, rule
+from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
     path = str(ROOT / folder)
@@ -40,9 +40,11 @@ def ensure_run(fresh: bool) -> dict:
     return router.run()
 
 
-def zeroed(artifact: dict) -> None:
+def zeroed(artifact: dict, only: str = None) -> None:
     heading("R1  every message carries one disposition and a reason")
     for decision in artifact["decisions"]:
+        if only is not None and decision["id"] != only:
+            continue
         print(f"  {decision['id']}  {decision['disposition']:<11} {decision['by']:<6} "
               f"{decision['reason'][:42]}")
     rule()
@@ -51,7 +53,25 @@ def zeroed(artifact: dict) -> None:
     print(f"undecided: {artifact['messages_processed'] - len(artifact['decisions'])}")
 
 
-VIEWS = {Capability.R1: zeroed}
+def answered(artifact: dict, only: str = None) -> None:
+    heading("R2  replies grounded in earlier mail, or refused")
+    made = [d for d in artifact["drafts"] if only is None or d["id"] == only]
+
+    for draft in made:
+        if draft["refused"]:
+            named = f" [{', '.join(draft['cited'])}]" if draft["cited"] else ""
+            print(f"  {draft['id']}  refused{named}: {draft['refused']}")
+            continue
+        print(f"  {draft['id']}  cited: {', '.join(draft['cited'])}")
+        print(wrap(draft["body"], 8))
+        print()
+    rule()
+    drafted = [d for d in made if not d["refused"]]
+    print(f"{len(drafted)} drafted, {len(made) - len(drafted)} refused, "
+          f"{sum(len(d['cited']) for d in drafted)} citations, all checked against the store")
+
+
+VIEWS = {Capability.R1: zeroed, Capability.R2: answered}
 
 
 def capability(name: str, args) -> None:
@@ -64,6 +84,9 @@ def capability(name: str, args) -> None:
     if view is None:
         print(f"{name} is not built yet.")
         return
+    if args.msg:
+        view(artifact, args.msg)
+        return
     view(artifact)
 
 
@@ -74,6 +97,11 @@ def main() -> None:
         "--all",
         action="store_true",
         help="demonstrate every capability, in the order the manifest lists them",
+    )
+    parser.add_argument(
+        "--msg",
+        metavar="ID",
+        help="narrow a capability to one message, where it works on more than one",
     )
     parser.add_argument(
         "--fresh",
