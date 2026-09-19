@@ -25,6 +25,7 @@ class Paths:
     PAGE = ROOT / "dashboard.html"
     MANIFEST = ROOT / "capabilities.json"
     CAPABILITIES = ROOT / "CAPABILITIES.md"
+    README = ROOT / "README.md"
     SAMPLE = ROOT / "assignment-instructions" / "capabilities.sample.json"
 
 

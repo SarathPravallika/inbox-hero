@@ -3,6 +3,8 @@
 # - Proves capabilities.json carries exactly the field names the marking script reads
 # - Proves every number in it was read out of the run artifact rather than typed beside it
 # - Proves every message id named in an observable is really in the mailbox
+# - Proves the README carries the repository link, the four Final Report answers and
+#   every design choice the submission guidelines ask it to cover
 # - Proves CAPABILITIES.md and capabilities.json say the same thing about every
 #   capability, because two files listing the same ten will drift otherwise
 # - Runs every command in the manifest, in the order listed, against a copy of only the
@@ -160,6 +162,28 @@ def check_readable() -> list[str]:
     return problems
 
 
+def check_reported() -> list[str]:
+    problems = []
+    if not Paths.README.exists():
+        problems.append(f"{Paths.README.name} has not been written")
+        return problems
+
+    said = Paths.README.read_text()
+    if manifest.build(stored())["repo"] not in said.splitlines()[2]:
+        problems.append(f"{Paths.README.name} does not carry the repository link at the top")
+    for number in range(1, 5):
+        if f"### {number}." not in said:
+            problems.append(f"Final Report question {number} is not answered")
+    for wanted in ("Framework:", "dispositions:", "Reversible and irreversible",
+                   "The gate.", "Retrieval:"):
+        if wanted not in said:
+            problems.append(f"{Paths.README.name} never covers {wanted!r}")
+    for named in re.findall(r"`(src/[a-z]+\.py|demo\.py)`", said):
+        if not (Paths.ROOT / named).exists():
+            problems.append(f"{Paths.README.name} names {named}, which is not in the project")
+    return problems
+
+
 def check_runs() -> list[str]:
     problems = []
     with tempfile.TemporaryDirectory() as room:
@@ -195,6 +219,7 @@ def run() -> bool:
                         ("ids that exist", check_truthful(store)),
                         ("written out", check_written()),
                         ("readable and in step", check_readable()),
+                        ("reported on", check_reported()),
                         ("every command runs", check_runs())):
         print(f"  {'FAIL' if found else 'pass'}  {name}")
         problems.extend(found)
