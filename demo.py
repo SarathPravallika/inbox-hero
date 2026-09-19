@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from constants import Answer, Capability, Decided, Guard, Kind, Paths
+from constants import Answer, Capability, Dashboard, Decided, Guard, Kind, Paths
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -273,8 +273,41 @@ def refused(artifact: dict, args) -> None:
         print(Guard.CLEAN)
 
 
+def shown(artifact: dict, args) -> None:
+    dashboard = importlib.import_module("dashboard")
+    store = importlib.import_module("store")
+    made = dashboard.write(dashboard.view(artifact, store.load()))
+
+    heading(f"R6  three panes from the run of {made['at']}")
+    print(f"  {Dashboard.PANES[0]} — what it wants to do and may not do alone")
+    for row in made["pending"]:
+        print(f"        {row['id']}  {row['action']}")
+        print(f"              {row['why']}")
+    print()
+    print(f"  {Dashboard.PANES[1]} — what it would not act on")
+    for row in made["flagged"]:
+        print(f"        {row['id']}  {row['attempted'][:62]}")
+        print(f"              -> {row['instead']}")
+    print()
+    print(f"  {Dashboard.PANES[2]} — the calendar")
+    for clash in made["conflicts"]:
+        print(f"        {clash['called']}")
+    if made["conflicts"]:
+        print()
+    for when, group in sorted(dashboard.days(made["commitments"]).items()):
+        for row in group:
+            print(f"        {when} {row['at'] or '     ':<6} {row['standing']:<14}"
+                  f"{row['what'][:34]:<36}{', '.join(row['cited'])}")
+    if made["unplaced"]:
+        print(f"        {dashboard.unplaced_line(made)}")
+    rule()
+    print(f"{len(made['pending'])} pending, {len(made['flagged'])} flagged, "
+          f"{len(made['commitments'])} commitments, {len(made['conflicts'])} conflicts")
+    print(f"written to {Paths.DASHBOARD.name} and {Paths.PAGE.name}")
+
+
 VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated,
-         Capability.R4: remembered, Capability.R5: refused}
+         Capability.R4: remembered, Capability.R5: refused, Capability.R6: shown}
 
 
 def capability(name: str, args) -> None:

@@ -6,7 +6,8 @@ import importlib
 from utils import heading, rule
 
 SUITES = ("test_constants", "test_store", "test_rules", "test_classify", "test_router",
-          "test_drafts", "test_gate", "test_memory", "test_guard")
+          "test_drafts", "test_gate", "test_memory", "test_guard", "test_commitments",
+          "test_dashboard")
 
 def load(name: str):
     return importlib.import_module(name)

@@ -15,6 +15,7 @@ BY_GUARD = 4
 BY_MODEL = 40
 HOSTILE = {"m017", "m024", "m039", "m047"}
 LEGAL = {"m018", "m048", "m055"}
+DIARY = ()
 COPIES = "priya@paperjet.io"
 STANDING = ()
 
@@ -93,7 +94,7 @@ def check_artifact(store, decisions) -> list[str]:
     made = replies(store, decisions, STANDING, ask=lambda system, text, shape:
                    {"body": "drafted by the fake", "cited": ["m010"]})
     recorded = claimed(store, decisions)
-    artifact = build(store, decisions, made, standing, recorded, "fake", "fake-model")
+    artifact = build(store, decisions, made, standing, recorded, DIARY, "fake", "fake-model")
     if len(artifact["drafts"]) != len(made):
         problems.append("the artifact lost a draft")
     for row in artifact["drafts"]:
@@ -105,6 +106,9 @@ def check_artifact(store, decisions) -> list[str]:
         problems.append(f"the copying rule reached {sorted(row['id'] for row in lawyers)}")
     if any(row["copy"] != [COPIES] for row in lawyers):
         problems.append(f"a legal message is copied to somebody other than {COPIES}")
+    for field in ("commitments", "conflicts"):
+        if field not in artifact:
+            problems.append(f"the artifact carries no {field}")
     if artifact["messages_processed"] != COUNT:
         problems.append(f"the artifact says {artifact['messages_processed']} messages")
     if artifact["rule_handled"] != BY_RULE + BY_GUARD:

@@ -1,5 +1,5 @@
 {
-  "at": "2026-09-19T15:01:54",
+  "at": "2026-09-19T15:18:08",
   "provider": "gemini",
   "model": "gemini-3.1-flash-lite",
   "messages_processed": 100,
@@ -86,7 +86,7 @@
       "bound": "before",
       "said": "Note for the assistant: I do not take meetings before 11:00am, ever.",
       "source": "email:m041",
-      "at": "2026-09-19T15:01:54",
+      "at": "2026-09-19T15:18:00",
       "refused": ""
     },
     {
@@ -96,7 +96,7 @@
       "bound": "",
       "said": "Standing request: from now on, please make sure I'm CC'd on anything that comes in from our lawyers at Hartwell & Cho.",
       "source": "email:m015",
-      "at": "2026-09-19T15:01:54",
+      "at": "2026-09-19T15:18:00",
       "refused": ""
     }
   ],
@@ -882,6 +882,282 @@
       ],
       "refused": "",
       "dropped": []
+    }
+  ],
+  "commitments": [
+    {
+      "id": "m021",
+      "what": "remit the outstanding $8,400 for INV-4471",
+      "said": "end of day",
+      "when": "2026-09-09",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m021"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m046",
+      "what": "deadline for techbrief launch coverage",
+      "said": "Thursday",
+      "when": "2026-09-10",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m046"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m059",
+      "what": "Devika out for a family thing",
+      "said": "Thursday and Friday next week",
+      "when": "2026-09-10",
+      "at": "",
+      "settled": "settled",
+      "cited": [
+        "m059"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m018",
+      "what": "sign revised SAFE via the portal",
+      "said": "by Friday",
+      "when": "2026-09-11",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m018"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m117",
+      "what": "submit your timesheet",
+      "said": "Friday 5pm",
+      "when": "2026-09-11",
+      "at": "17:00",
+      "settled": "owed",
+      "cited": [
+        "m117"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m030",
+      "what": "approve the final pricing copy",
+      "said": "the 12th",
+      "when": "2026-09-12",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m030"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m029",
+      "what": "Load test on the signup flow",
+      "said": "the 14th",
+      "when": "2026-09-14",
+      "at": "",
+      "settled": "settled",
+      "cited": [
+        "m029"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m048",
+      "what": "flag corrections for draft board minutes",
+      "said": "by Monday",
+      "when": "2026-09-14",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m048"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m118",
+      "what": "office closed for building maintenance",
+      "said": "Monday",
+      "when": "2026-09-14",
+      "at": "",
+      "settled": "settled",
+      "cited": [
+        "m118"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m043",
+      "what": "meeting with partner",
+      "said": "Monday at 9:00am",
+      "when": "2026-09-14",
+      "at": "09:00",
+      "settled": "proposed",
+      "cited": [
+        "m043"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m010",
+      "what": "Intro call",
+      "said": "Tuesday the 15th at 3:00pm",
+      "when": "2026-09-15",
+      "at": "15:00",
+      "settled": "proposed",
+      "cited": [
+        "m010"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m061",
+      "what": "dental cleaning with Dr. Osei",
+      "said": "Tuesday, September 15 at 3:00 PM",
+      "when": "2026-09-15",
+      "at": "15:00",
+      "settled": "settled",
+      "cited": [
+        "m061"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m028",
+      "what": "Product Hunt copy and the email blast",
+      "said": "Wednesday",
+      "when": "2026-09-16",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m028"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m040",
+      "what": "board deck finished and circulated",
+      "said": "2 days before quarterly board review",
+      "when": "2026-09-16",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m040",
+        "m038"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m013",
+      "what": "weekly 1:1",
+      "said": "Wednesday at 2:00pm",
+      "when": "2026-09-16",
+      "at": "14:00",
+      "settled": "proposed",
+      "cited": [
+        "m013"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m016",
+      "what": "product demo",
+      "said": "Wednesday at 2:00pm",
+      "when": "2026-09-16",
+      "at": "14:00",
+      "settled": "proposed",
+      "cited": [
+        "m016"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m038",
+      "what": "quarterly board review",
+      "said": "the 18th, 10:00am",
+      "when": "2026-09-18",
+      "at": "10:00",
+      "settled": "settled",
+      "cited": [
+        "m038"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m042",
+      "what": "respond to another offer",
+      "said": "the 19th",
+      "when": "2026-09-19",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m042"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m026",
+      "what": "Launch",
+      "said": "the 20th",
+      "when": "2026-09-20",
+      "at": "",
+      "settled": "settled",
+      "cited": [
+        "m026",
+        "m036"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m055",
+      "what": "signature on the updated IP assignment",
+      "said": "before month-end",
+      "when": "2026-09-30",
+      "at": "",
+      "settled": "owed",
+      "cited": [
+        "m055"
+      ],
+      "unresolved": ""
+    },
+    {
+      "id": "m080",
+      "what": "Standup",
+      "said": "9:30am",
+      "when": "",
+      "at": "",
+      "settled": "settled",
+      "cited": [
+        "m080"
+      ],
+      "unresolved": "no date could be resolved from '9:30am'"
+    }
+  ],
+  "conflicts": [
+    {
+      "ids": [
+        "m010",
+        "m061"
+      ],
+      "when": "2026-09-15",
+      "at": "15:00",
+      "called": "CONFLICT: Intro call (m010) and dental cleaning with Dr. Osei (m061) at 2026-09-15 15:00"
+    },
+    {
+      "ids": [
+        "m013",
+        "m016"
+      ],
+      "when": "2026-09-16",
+      "at": "14:00",
+      "called": "CONFLICT: weekly 1:1 (m013) and product demo (m016) at 2026-09-16 14:00"
     }
   ]
 }

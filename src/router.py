@@ -12,6 +12,7 @@ import json
 from dataclasses import asdict
 
 import classify
+import commitments
 import drafts
 import guard
 import memory
@@ -51,7 +52,7 @@ def counted(decisions, by: Decided) -> int:
     return sum(1 for decision in decisions if decision.by is by)
 
 
-def build(store, decisions, written_drafts, standing, recorded, provider: str,
+def build(store, decisions, written_drafts, standing, recorded, diary, provider: str,
           model: str) -> dict:
     return {
         "at": tracing.stamp(),
@@ -74,6 +75,12 @@ def build(store, decisions, written_drafts, standing, recorded, provider: str,
         "drafts": [{"id": d.id, "body": d.body, "cited": list(d.cited),
                     "refused": d.refused, "dropped": list(d.dropped)}
                    for d in written_drafts],
+        "commitments": [{"id": c.id, "what": c.what, "said": c.said, "when": c.when,
+                         "at": c.at, "settled": c.settled, "cited": list(c.cited),
+                         "unresolved": c.unresolved} for c in diary],
+        "conflicts": [{"ids": [one.id, other.id], "when": one.when, "at": one.at,
+                       "called": commitments.clash((one, other))}
+                      for one, other in commitments.clashes(diary)],
     }
 
 
@@ -87,6 +94,10 @@ def written(artifact: dict) -> dict:
         tracing.record(Capability.R2, "refusal" if made["refused"] else "draft", **made)
     for one in artifact["refusals"]:
         tracing.record(Capability.R5, "refusal", **one)
+    for one in artifact["commitments"]:
+        tracing.record(Capability.R6, "commitment", **one)
+    for one in artifact["conflicts"]:
+        tracing.record(Capability.R6, "conflict", **one)
     for one in artifact["standing"]:
         tracing.record(Capability.R4, "in force", **one)
     for one in artifact["recorded"]:
@@ -108,7 +119,8 @@ def run(ask=None) -> dict:
     written_drafts = replies(store, decisions, standing, ask=ask)
     recorded = claimed(store, decisions)
     memory.keep(recorded)
-    return written(build(store, decisions, written_drafts, standing, recorded,
+    diary = commitments.gather(store, decisions, ask=ask)
+    return written(build(store, decisions, written_drafts, standing, recorded, diary,
                          config.PROVIDER, config.MODEL))
 
 

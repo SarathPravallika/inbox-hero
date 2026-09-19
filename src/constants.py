@@ -19,6 +19,8 @@ class Paths:
     OUTBOX = ROOT / "outbox"
     TRASH = ROOT / "trash"
     APPROVALS = ROOT / "approvals.jsonl"
+    DASHBOARD = ROOT / "dashboard.json"
+    PAGE = ROOT / "dashboard.html"
 
 
 class Inbox:
@@ -45,6 +47,12 @@ class Action(StrEnum):
 class Kind(StrEnum):
     SCHEDULING = "scheduling"
     COPYING = "copying"
+
+
+class Settled(StrEnum):
+    SETTLED = "settled"
+    PROPOSED = "proposed"
+    OWED = "owed"
 
 
 class Risk(StrEnum):
@@ -216,6 +224,119 @@ class Guard:
     STALE = ("this run was written before the guard existed, so it records nothing it found. "
              "Run `python demo.py --cap R1 --fresh` and try again.")
     REASON = "instructions addressed to an assistant, attempting to {tried}"
+
+
+class Commitments:
+    TODAY = "2026-09-09"
+    BATCH = 15
+    DATED = (r"\b(?:\d{1,2}(?:st|nd|rd|th)\b|mon|tues|wednes|thurs|fri|satur|sun|january"
+             r"|february|march|april|may|june|july|august|september|october|november"
+             r"|december|today|tomorrow|month[- ]end|end of (?:the )?(?:month|week|day)"
+             r"|deadline|due\b|\d{1,2}:\d{2}|\d{1,2}\s*(?:am|pm)\b"
+             r"|(?:days?|weeks?)\s+(?:before|after)|ahead of|by the \d|before the \d)")
+    ORDINAL = r"\b(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b"
+    NAMED = (r"\b(january|february|march|april|may|june|july|august|september|october"
+             r"|november|december)\s+(\d{1,2})\b")
+    WEEKDAYS = ("monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday")
+    CLOCK = r"\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b"
+    MONTH_END = r"\bmonth[- ]end\b|\bend of (?:the )?month\b"
+    TODAY_WORDS = r"\btoday\b|\btonight\b|\bend of (?:the )?day\b|\bthis evening\b"
+    TOMORROW = r"\btomorrow\b"
+    COUNTS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7,
+              "a": 1, "an": 1}
+    RELATIVE = r"\b(\w+)\s+(days?|weeks?)\s+(before|after)\s+(.{3,60})"
+    SHORTEST = 4
+    ANCHORED = "{days} days {way} {anchor}"
+    CLASH = "CONFLICT: {what} at {when}"
+    NOTHING = "no date could be resolved from {said!r}"
+    SAME = "{what}"
+
+
+class Dashboard:
+    PANES = ("Pending actions", "Flagged", "Commitments")
+    WHY = "sending is irreversible, the message leaves the machine and cannot be recalled"
+    PROPOSED = "send the drafted reply to {to}"
+    LEFT = "quarantined, left in the mailbox"
+    RAISED = "escalated, nothing done without Sam"
+    NOTHING = "no reply written"
+    UNACCEPTED = "claimed"
+    UNPLACED = "{count} dated thing{s} could not be placed on the calendar"
+    NONE = "nothing"
+    TITLE = "inboxHero"
+    LEDE = "Three panes from one run. Nothing here was written by hand."
+    SAYS = ("What the system wants to do and may not do alone.",
+            "Everything it would not act on, and what it did instead.",
+            "Dates and obligations, each carrying the mail it was taken from.")
+    FOOT = ("Built by demo.py --cap R6 from run.json. Re-run it and this page is rebuilt "
+            "exactly, from the same artifact.")
+    STYLE = """
+:root{--bg:#fbfbfd;--card:#fff;--ink:#17171c;--soft:#6b6b78;--line:#e7e7ee;
+--blue:#2563eb;--rose:#e11d48;--teal:#0d9488;--amber:#b45309;
+--blue-bg:#eef3ff;--rose-bg:#fff1f4;--teal-bg:#edfbf8;--amber-bg:#fff8ec}
+@media (prefers-color-scheme:dark){:root{--bg:#131317;--card:#1c1c23;--ink:#ececf2;
+--soft:#9797a6;--line:#2b2b35;--blue:#7ea2ff;--rose:#ff8098;--teal:#4fd0bd;--amber:#e8b45c;
+--blue-bg:#182036;--rose-bg:#2b1720;--teal-bg:#102623;--amber-bg:#2a2115}}
+*{box-sizing:border-box}
+body{margin:0;padding:2.5rem 1.25rem 3rem;background:var(--bg);color:var(--ink);
+font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:74rem;margin:0 auto}
+h1{font-size:1.7rem;margin:0 0 .3rem;letter-spacing:-.02em}
+.sub{margin:0;color:var(--soft)}
+.tally{display:flex;flex-wrap:wrap;gap:.5rem;margin:1.3rem 0 0;padding:0;list-style:none}
+.tally li{background:var(--card);border:1px solid var(--line);border-radius:999px;
+padding:.3rem .9rem;font-size:.85rem;color:var(--soft)}
+.tally b{color:var(--ink);font-variant-numeric:tabular-nums}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;
+margin:1.8rem 0 0;overflow:hidden}
+.head{padding:1rem 1.25rem .85rem;border-bottom:1px solid var(--line)}
+h2{font-size:1.05rem;margin:0;display:flex;align-items:center;gap:.65rem}
+.num{display:grid;place-items:center;width:1.6rem;height:1.6rem;border-radius:9px;
+font-size:.82rem;color:#fff;flex:none}
+.lede{margin:.4rem 0 0;color:var(--soft);font-size:.9rem}
+.p1 .num{background:var(--blue)}.p1 .head{background:var(--blue-bg)}
+.p2 .num{background:var(--rose)}.p2 .head{background:var(--rose-bg)}
+.p3 .num{background:var(--teal)}.p3 .head{background:var(--teal-bg)}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th{text-align:left;font-weight:600;color:var(--soft);font-size:.72rem;
+text-transform:uppercase;letter-spacing:.07em;padding:.75rem 1.25rem .45rem}
+td{padding:.6rem 1.25rem;border-top:1px solid var(--line);vertical-align:top}
+.id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85rem;color:var(--soft)}
+.at{font-variant-numeric:tabular-nums;white-space:nowrap}
+.clash{margin:0;padding:.8rem 1.25rem;background:var(--amber-bg);color:var(--amber);
+border-bottom:1px solid var(--line);font-weight:600;font-size:.9rem}
+.day td{background:var(--bg);font-weight:600;font-size:.8rem;letter-spacing:.04em;
+color:var(--soft);text-transform:uppercase}
+.pill{display:inline-block;padding:.1rem .6rem;border-radius:999px;font-size:.76rem;
+font-weight:600;border:1px solid currentColor;white-space:nowrap}
+.settled{background:var(--teal-bg);color:var(--teal)}
+.proposed{background:var(--blue-bg);color:var(--blue)}
+.owed{background:var(--amber-bg);color:var(--amber)}
+.claimed{background:var(--rose-bg);color:var(--rose)}
+.note{margin:0;padding:.75rem 1.25rem;color:var(--soft);font-size:.85rem;
+border-top:1px solid var(--line)}
+.cal{padding:1.1rem 1.25rem .4rem}
+.cal h3{margin:0 0 .65rem;font-size:.95rem;letter-spacing:.01em}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.dow{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--soft);
+font-weight:600;padding:.15rem .3rem}
+.cell{min-height:5rem;border:1px solid var(--line);border-radius:9px;padding:.3rem;
+background:var(--bg);display:flex;flex-direction:column;gap:3px}
+.cell.empty{background:transparent;border-color:transparent;min-height:0}
+.cell.now{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.cell.clashday{background:var(--amber-bg);border-color:var(--amber)}
+.dnum{font-size:.72rem;font-weight:700;color:var(--soft);font-variant-numeric:tabular-nums}
+.chip{font-size:.67rem;line-height:1.3;border-radius:5px;padding:.16rem .34rem;
+border:1px solid currentColor;display:flex;flex-direction:column;gap:1px;min-width:0}
+.cw{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.ci{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.6rem;opacity:.8;
+overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.key{display:flex;flex-wrap:wrap;gap:.45rem;padding:.9rem 1.25rem 0;font-size:.74rem;
+color:var(--soft);align-items:center}
+@media(max-width:46rem){.cell{min-height:3.6rem;padding:.18rem}.chip{font-size:.58rem}
+.grid{gap:2px}}
+footer{margin:1.8rem 0 0;color:var(--soft);font-size:.83rem}
+@media(max-width:40rem){td,th{padding-left:.9rem;padding-right:.9rem}}
+"""
 
 
 class Memory:
