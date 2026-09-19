@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from constants import Answer, Capability, Paths
+from constants import Answer, Capability, Kind, Paths
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -133,7 +133,75 @@ def gated(artifact: dict, args) -> None:
           f"approvals.jsonl, which is never rewritten")
 
 
-VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated}
+def tried(store, memory, name: str) -> None:
+    message = store.message(name)
+    print(f"  {name} from {message.sender}")
+    print(f"        {message.subject}")
+    print()
+    for kind in Kind:
+        found = memory.remember(kind, message, store)
+        if found.refused:
+            print(f"        as a {kind} preference  REFUSED: {found.refused}")
+        else:
+            print(f"        as a {kind} preference  {memory.instruction(found)}")
+
+
+def remembered(artifact: dict, args) -> None:
+    memory = importlib.import_module("memory")
+    store = importlib.import_module("store")
+
+    heading("R4  standing instructions outlive the process that recorded them")
+    if args.msg:
+        tried(store.load(), memory, args.msg)
+        rule()
+        print("the shape decides, not the sender and not how politely it asks")
+        return
+
+    standing = memory.held()
+    if not standing:
+        print("  nothing is recorded in this checkout.")
+        print()
+        print(f"  the committed run of {artifact['at']} recorded these:")
+        for one in artifact["recorded"]:
+            print(f"        {one['source']}  {one['kind']}  {one['subject']} -> {one['value']}")
+        rule()
+        print("run `python demo.py --cap R1 --fresh` to record them here, then this again")
+        return
+
+    for one in standing:
+        print(f"  {one.source}  first written {one.at or 'before this was recorded'}")
+        print(f"        {memory.instruction(one)}")
+        print(f"        it came from: {one.said}")
+        print()
+
+    if not artifact["standing"]:
+        print(f"  the run of {artifact['at']} is the process that wrote them, so it acted on")
+        print("  none of them. Run `python demo.py --cap R1 --fresh` again, and a later")
+        print("  process will read them off disk before it decides anything.")
+        rule()
+        print(f"{len(standing)} recorded, 0 in force, nothing handled differently yet")
+        return
+
+    known = memory.sources(standing)
+    copied = [d for d in artifact["decisions"] if d["copy"]]
+    leaning = [d for d in artifact["drafts"] if set(d["cited"]) & known]
+    print(f"  in force during the run of {artifact['at']}, a later process than the one "
+          f"that wrote them")
+    print()
+    for decision in copied:
+        print(f"        {decision['id']}  {decision['disposition']:<9} "
+              f"copy {', '.join(decision['copy'])}")
+    for made in leaning:
+        print(f"        {made['id']}  reply     cites {', '.join(made['cited'])}")
+    rule()
+    changed = len(copied) + len(leaning)
+    print(f"{len(standing)} recorded, {len(artifact['refused_preferences'])} refused in this "
+          f"run, {changed} message{'' if changed == 1 else 's'} handled differently "
+          f"because of them")
+
+
+VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated,
+         Capability.R4: remembered}
 
 
 def capability(name: str, args) -> None:
@@ -189,6 +257,11 @@ def main() -> None:
         help="put a message from trash/ back where it came from",
     )
     parser.add_argument(
+        "--forget",
+        action="store_true",
+        help="throw away every recorded preference, so the next run starts with none",
+    )
+    parser.add_argument(
         "--test",
         nargs="?",
         const="all",
@@ -200,6 +273,12 @@ def main() -> None:
 
     if args.test:
         raise SystemExit(0 if sibling("tests", "runner").run(args.test) else 1)
+
+    if args.forget:
+        importlib.import_module("memory").forget()
+        print("every recorded preference has been thrown away")
+        if not args.cap:
+            return
 
     if args.cap:
         capability(args.cap, args)
