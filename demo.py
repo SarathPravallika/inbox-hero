@@ -14,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from constants import Answer, Capability, Kind, Paths
+from constants import Answer, Capability, Decided, Guard, Kind, Paths
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -52,8 +52,14 @@ def zeroed(artifact: dict, args) -> None:
               f"{decision['reason'][:42]}")
     rule()
     print(f"{artifact['messages_processed']} messages, "
-          f"{artifact['rule_handled']} by rule, {artifact['model_handled']} by model")
+          f"{artifact['rule_handled']} without a model "
+          f"({artifact.get('guard_handled', 0)} of them by the guard), "
+          f"{artifact['model_handled']} by model")
     print(f"undecided: {artifact['messages_processed'] - len(artifact['decisions'])}")
+    refusals = artifact.get("refusals") or ()
+    if refusals:
+        print(Guard.CARRIED.format(count=len(refusals),
+                                   names=", ".join(r["id"] for r in refusals)))
 
 
 def answered(artifact: dict, args) -> None:
@@ -200,8 +206,75 @@ def remembered(artifact: dict, args) -> None:
           f"because of them")
 
 
+def unreached(artifact: dict) -> list[str]:
+    actions = importlib.import_module("actions")
+    targets = {where for refusal in artifact.get("refusals") or ()
+               for where in refusal["where"]}
+    reached = []
+    for name in actions.sent():
+        written = actions.where(name).read_text().lower()
+        for where in sorted(targets):
+            if where in written:
+                reached.append(Guard.REACHED.format(name=name, where=where))
+    return reached
+
+
+def blind(artifact: dict) -> None:
+    guard = importlib.import_module("guard")
+    router = importlib.import_module("router")
+    store = importlib.import_module("store")
+
+    decisions = router.sorted_out(store.load(), ask=lambda system, text, shape: None)
+    caught = [d for d in decisions if d.by == Decided.GUARD]
+    print(f"  {Guard.BLIND}.")
+    print()
+    for decision in caught:
+        print(f"        {decision.id}  {decision.disposition}")
+        print(wrap(decision.reason, 14))
+    rule()
+    silent = [d for d in decisions if d.by == Decided.MODEL]
+    print(f"{len(caught)} still quarantined with no model in the loop, "
+          f"{len(decisions)} messages still decided")
+    print(f"the {len(silent)} the model would have judged are escalated to Sam instead")
+
+
+def refused(artifact: dict, args) -> None:
+    heading("R5  mail that talks to the assistant is refused, flagged and left in place")
+    if args.blind:
+        blind(artifact)
+        return
+    if "refusals" not in artifact:
+        print(wrap(Guard.STALE, 2))
+        return
+
+    guard = importlib.import_module("guard")
+    store = importlib.import_module("store")
+    box = store.load()
+    disposed = {d["id"]: d for d in artifact["decisions"]}
+
+    for refusal in artifact["refusals"]:
+        if args.msg not in (None, refusal["id"]):
+            continue
+        made = disposed[refusal["id"]]
+        print(wrap(refusal["flagged"], 2))
+        print(wrap(f"it speaks to an assistant: {refusal['said']}", 8))
+        asked = guard.asking(guard.spoken(box.message(refusal["id"])))
+        if asked and asked != refusal["said"]:
+            print(wrap(f"and asks it to act: {asked}", 8))
+        print(f"        {made['disposition']}, decided by {made['by']}, still in the mailbox")
+        print()
+    rule()
+    reached = unreached(artifact)
+    print(f"{len(artifact['refusals'])} flagged, 0 deleted, 0 acted on, "
+          f"{len(artifact['decisions'])} messages still in the run")
+    for line in reached:
+        print(f"  BREACH  {line}")
+    if not reached:
+        print(Guard.CLEAN)
+
+
 VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated,
-         Capability.R4: remembered}
+         Capability.R4: remembered, Capability.R5: refused}
 
 
 def capability(name: str, args) -> None:
@@ -255,6 +328,11 @@ def main() -> None:
         "--restore",
         metavar="ID",
         help="put a message from trash/ back where it came from",
+    )
+    parser.add_argument(
+        "--blind",
+        action="store_true",
+        help="run the triage without asking the model anything, to show what still holds",
     )
     parser.add_argument(
         "--forget",

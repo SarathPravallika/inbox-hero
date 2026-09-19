@@ -44,6 +44,15 @@ def tried(text: str) -> tuple[str, ...]:
                  if any(re.search(pattern, text, re.I) for pattern in patterns))
 
 
+def asking(text: str) -> str:
+    best, most = "", 0
+    for part in sentences(text):
+        found = len(tried(part))
+        if found > most:
+            best, most = part, found
+    return best
+
+
 def elsewhere(message: Message, text: str) -> tuple[str, ...]:
     ours = {message.sender.lower(), Inbox.OWNER.lower()}
     found = []

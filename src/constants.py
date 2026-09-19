@@ -208,6 +208,13 @@ class Guard:
             Attempt.RECONFIGURE: "change what it is allowed to do without asking"}
     TO = " to {where}"
     FLAGGED = "FLAGGED: {id} attempted to {tried}; not done, left in place."
+    CARRIED = ("{count} messages carried instructions for an assistant and were quarantined "
+               "without a model call: {names}")
+    CLEAN = "outbox/ holds nothing addressed to any of them"
+    REACHED = "outbox/{name} is addressed to {where}"
+    BLIND = "the model was asked nothing at all on this pass"
+    STALE = ("this run was written before the guard existed, so it records nothing it found. "
+             "Run `python demo.py --cap R1 --fresh` and try again.")
     REASON = "instructions addressed to an assistant, attempting to {tried}"
 
 
