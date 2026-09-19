@@ -216,6 +216,37 @@ The phishing is deliberately not the guard's job. m021, m023 and m045 are aimed 
 not at an assistant, and fraud is a judgement call that stays with the model. One detector
 trying to do both jobs is how you end up quarantining m041.
 
+## Every required item, and where it is met
+
+Part 6 has its own section above. The rest:
+
+| | requirement | where |
+|---|---|---|
+| 2.1 | one disposition and a stated reason for every message | `--cap R1`; the vocabulary is defined above |
+| 2.2 | no message left without a disposition | `--cap R1` prints `undecided: 0` |
+| 2.3 | report how many never required a model call | 60 of 100, printed by `--cap R1` |
+| 3.1 | a reply grounded in a specific earlier message | m016 from m013, m046 from m036 |
+| 3.2 | every draft records the ids it drew on, checked against the store | `drafts.checked()`; ids outside what was given are dropped, not cited |
+| 3.3 | name the retrieval method in the manifest | thread-walk plus IDF keyword |
+| 3.4 | if the information is not in the inbox, say so and draft nothing | m061, m042 and m013 get no draft and say why; `Drafts.UNGROUNDED` covers a message with nothing retrieved at all |
+| 4.1 | classify actions, including whether deleting is reversible and why | the table above, read off `Gate.RISK` |
+| 4.2 | gate every irreversible action, approval or dry-run | both: `--cap R3` asks, `--cap R3 --dry-run` shows |
+| 4.3 | sending writes to `outbox/`, one file per message, and nowhere else | `actions.send()` is the only writer in the system |
+| 4.4 | log what was proposed, what the human said, what happened | `approvals.jsonl`, nine rows |
+| 4.5 | state where the escalation line is and what was traded | the quoted block above |
+| 5.1 | a preference recorded, surviving a restart, changing behaviour | `--cap R4`, and the five-command sequence below |
+| 5.2 | name one preference and the message it affects | m015, affecting m018 — it is `preference_demo` in `capabilities.json` |
+| 7.1 | pending actions: message, proposed action, why it needs a human | pane 1, four rows |
+| 7.2 | flagged: what was attempted and what it did instead | pane 2, fifteen rows |
+| 7.3 | commitments as a calendar, every one citing its messages | pane 3, a month grid with the ids inside each cell |
+| 7.4 | at least one commitment derived from more than one message | two: the board deck on the 16th from m040 and m038, and the launch from m026 and m036 |
+| 7.5 | conflicts called out, not silently listed | both printed above the calendar and marked amber in the grid |
+| 7.6 | written to a file, reproducible from a run, not hand-assembled | `dashboard.json` and `dashboard.html`, written by `--cap R6` from `run.json` |
+
+**Rate limits.** Calls are spaced by `Model.GAP_SECONDS`, batched ten messages at a time for
+triage and fifteen for commitments, and `llm.patiently()` retries on 429, `RESOURCE_EXHAUSTED`
+and 503 rather than crashing. A full run is about twenty requests.
+
 ## Reproducing the evidence
 
 The committed artifacts come from the run of `2026-09-19T16:31:53`. To rebuild them:

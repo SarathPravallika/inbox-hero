@@ -117,7 +117,9 @@ class Manifest:
              "testing.")
     RETRIEVAL = "thread-walk plus IDF keyword"
     GATE = "both"
-    PREFERENCE = "m015: CC priya@paperjet.io on anything from Hartwell & Cho"
+    PREFERENCE = ("m015: CC priya@paperjet.io on anything from Hartwell & Cho. It affects "
+                  "m018, the SAFE amendment from m.cho@hartwellcho.com, which carries "
+                  "copy priya@paperjet.io in its decision record, as do m048 and m055.")
     ALSO_REVERSIBLE = ("draft", "label")
     FIELDS = ("id", "name", "tier", "claim", "command", "observable", "evidence")
     TIMEOUT = 120

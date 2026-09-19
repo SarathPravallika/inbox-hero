@@ -8,10 +8,13 @@
 # - Proves CAPABILITIES.md and capabilities.json say the same thing about every
 #   capability, because two files listing the same ten will drift otherwise
 # - Runs every command in the manifest, in the order listed, against a copy of only the
-#   files git tracks, because the assignment says a command that does not run is a
+#   files that ship, because the assignment says a command that does not run is a
 #   capability that was not delivered
+# - Works from an unpacked zip as well as from a clone, because that is what a reader
+#   of the submission actually has
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -26,12 +29,30 @@ from utils import heading, rule
 
 LOOKS_LIKE_AN_ID = r"\bm\d{3}\b"
 SKIP = ("venv/", "assignment-instructions/FN_")
+UNPACKED = ("venv", ".git", "__pycache__", ".pytest_cache")
+DERIVED = ("mailbox.json", "memory.json", ".env")
+
+
+def walked() -> list[str]:
+    found = []
+    for here, folders, files in os.walk(Paths.ROOT):
+        folders[:] = [one for one in folders if one not in UNPACKED]
+        for name in files:
+            if name not in DERIVED:
+                found.append(str((Path(here) / name).relative_to(Paths.ROOT)))
+    return found
+
+
+def shipped() -> list[str]:
+    try:
+        return subprocess.run(["git", "ls-files"], cwd=Paths.ROOT, capture_output=True,
+                              text=True, check=True).stdout.split()
+    except (OSError, subprocess.SubprocessError):
+        return walked()
 
 
 def fresh(room: Path) -> Path:
-    listed = subprocess.run(["git", "ls-files"], cwd=Paths.ROOT, capture_output=True,
-                            text=True, check=True).stdout.split()
-    for name in listed:
+    for name in shipped():
         if name.startswith(SKIP) or not (Paths.ROOT / name).exists():
             continue
         target = room / name
