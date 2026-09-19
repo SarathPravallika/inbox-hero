@@ -3,6 +3,7 @@
 # - Proves nothing reaches outbox/ without a person saying yes, and that every answer is logged
 # - Proves the mail the assignment shipped is never written to, whatever a run does
 # - Proves a dry run shows the whole proposal and still writes nothing
+# - Proves a deleted message comes back exactly as it was, and that hostile mail never goes
 
 import hashlib
 import json
@@ -12,7 +13,7 @@ from pathlib import Path
 
 import actions
 import gate
-from constants import Action, Answer, Gate, Paths, Risk
+from constants import Action, Actions, Answer, Gate, Paths, Risk
 from drafts import Draft
 from store import load, mailbox
 from utils import heading, rule
@@ -22,16 +23,30 @@ GOOD = Draft(id=REPLY, body="I cannot accept the 9:00am.", cited=("m041",))
 REFUSED = Draft(id=REPLY, refused="no earlier mail bears on this")
 
 
+WATCHED = ("OUTBOX", "APPROVALS", "MAILBOX", "TRASH", "RUN")
+HOSTILE = "m024"
+NOISE = "m113"
+
+
 @contextmanager
-def elsewhere():
-    outbox, approvals = Paths.OUTBOX, Paths.APPROVALS
+def elsewhere(triaged=True):
+    held = {name: getattr(Paths, name) for name in WATCHED}
     with tempfile.TemporaryDirectory() as room:
         Paths.OUTBOX = Path(room) / "outbox"
         Paths.APPROVALS = Path(room) / "approvals.jsonl"
+        Paths.MAILBOX = Path(room) / "mailbox.json"
+        Paths.TRASH = Path(room) / "trash"
+        Paths.RUN = Path(room) / "run.json"
+        if triaged:
+            Paths.RUN.write_text(json.dumps({"decisions": [
+                {"id": record["id"],
+                 "disposition": "quarantine" if record["id"] == HOSTILE else "archive"}
+                for record in json.loads(Paths.INBOX.read_text())]}))
         try:
             yield Path(room)
         finally:
-            Paths.OUTBOX, Paths.APPROVALS = outbox, approvals
+            for name, path in held.items():
+                setattr(Paths, name, path)
 
 
 def digest(path: Path) -> str:
@@ -146,6 +161,89 @@ def check_reconciles() -> list[str]:
     return problems
 
 
+def check_protected() -> list[str]:
+    problems = []
+    with elsewhere():
+        verdict = actions.remove(HOSTILE, "it looks like spam", ask=lambda proposal: True)
+        if verdict.answer != Answer.REFUSED:
+            problems.append(f"quarantined mail answered {verdict.answer} to a delete")
+        if verdict.outcome != Gate.PROTECTED:
+            problems.append(f"the refusal reads {verdict.outcome!r}")
+        if HOSTILE not in {record["id"] for record in actions.carried()}:
+            problems.append(f"{HOSTILE} left the mailbox despite the refusal")
+        if actions.held():
+            problems.append("a refused delete still wrote to trash/")
+
+        gone = actions.remove("m999", "it does not exist", ask=lambda proposal: True)
+        if gone.answer != Answer.REFUSED:
+            problems.append("deleting a message that is not there was not refused")
+
+    with elsewhere(triaged=False):
+        verdict = actions.remove(NOISE, "clearing noise", ask=lambda proposal: True)
+        if verdict.answer != Answer.REFUSED:
+            problems.append("a message was deleted before anything had triaged it")
+        if verdict.outcome != Gate.UNTRIAGED:
+            problems.append(f"the untriaged refusal reads {verdict.outcome!r}")
+    return problems
+
+
+def check_deleted() -> list[str]:
+    problems = []
+    with elsewhere():
+        before = len(actions.carried())
+        if actions.remove(NOISE, "clearing noise").answer != Answer.DRY:
+            problems.append("a delete with nobody to ask was not a dry run")
+        if len(actions.carried()) != before or actions.held():
+            problems.append("a dry run deleted something anyway")
+
+        if actions.remove(NOISE, "clearing noise", ask=lambda p: False).answer != Answer.DECLINED:
+            problems.append("a declined delete did not answer declined")
+        if len(actions.carried()) != before:
+            problems.append("a declined delete took the message anyway")
+
+        verdict = actions.remove(NOISE, "clearing noise", ask=lambda proposal: True)
+        if verdict.answer != Answer.APPROVED:
+            problems.append(f"an approved delete answered {verdict.answer}")
+        if actions.held() != (NOISE,):
+            problems.append(f"trash/ holds {actions.held()}, not just {NOISE}")
+        if NOISE in {record["id"] for record in actions.carried()}:
+            problems.append(f"{NOISE} is still in the mailbox after being deleted")
+        if len(actions.carried()) != before - 1:
+            problems.append(f"the mailbox holds {len(actions.carried())}, not {before - 1}")
+
+        saved = json.loads(actions.kept(NOISE).read_text())
+        if saved["message"]["id"] != NOISE or not saved["message"].get("body"):
+            problems.append("the trash record does not hold the whole message")
+        if not saved.get("why") or "position" not in saved:
+            problems.append("the trash record does not say why, or where it came from")
+    return problems
+
+
+def check_round_trip() -> list[str]:
+    problems = []
+    with elsewhere():
+        start = actions.carried()
+        actions.remove(NOISE, "clearing noise", ask=lambda proposal: True)
+        verdict = actions.restore(NOISE)
+        if verdict.answer != Answer.UNATTENDED:
+            problems.append(f"putting a message back answered {verdict.answer}")
+        if actions.carried() != start:
+            problems.append("the mailbox did not come back exactly as it was")
+        if actions.held():
+            problems.append(f"trash/ still holds {actions.held()} after a restore")
+
+        again = actions.restore(NOISE)
+        if again.answer != Answer.REFUSED or again.outcome != Actions.HELD.format(id=NOISE):
+            problems.append("restoring twice was not refused")
+
+        answers = [record["answer"] for record in gate.records()]
+        if answers.count(str(Answer.APPROVED)) != 1:
+            problems.append(f"the log shows {answers.count(str(Answer.APPROVED))} approvals")
+        if not any(record["action"] == str(Action.RESTORE) for record in gate.records()):
+            problems.append("the restore was never logged")
+    return problems
+
+
 def check_fixture() -> list[str]:
     problems = []
     before = digest(Paths.INBOX)
@@ -170,7 +268,8 @@ def run() -> bool:
     for name, check in (("vocabulary", check_vocabulary), ("dry run", check_dry_run),
                         ("declined", check_declined), ("approved", check_approved),
                         ("unsendable", check_unsendable), ("reconciles", check_reconciles),
-                        ("fixture", check_fixture)):
+                        ("protected", check_protected), ("deleted", check_deleted),
+                        ("round trip", check_round_trip), ("fixture", check_fixture)):
         found = check()
         print(f"  {'FAIL' if found else 'pass'}  {name}")
         problems.extend(found)

@@ -3,12 +3,13 @@
 # - Decides which actions a person has to approve before they happen
 # - Classifies every action as reversible or not, and that classification is code, not prose
 # - Writes the approval record: what was proposed, what the person said, what happened
+# - Protects mail that a run flagged as hostile, so an attack cannot be cleaned up afterwards
 # - No message text can widen what this permits, because the policy is not data
 
 import json
 from dataclasses import dataclass, replace
 from datetime import datetime
-from constants import Action, Answer, Gate, Paths, Risk
+from constants import Action, Answer, Disposition, Gate, Paths, Risk
 
 
 @dataclass(frozen=True, slots=True)
@@ -36,6 +37,24 @@ def risk(action: Action) -> Risk:
 
 def guarded(action: Action) -> bool:
     return Action(action) in Gate.APPROVAL
+
+
+def disposed(name: str) -> str:
+    if not Paths.RUN.exists():
+        return ""
+    for decision in json.loads(Paths.RUN.read_text()).get("decisions", ()):
+        if decision.get("id") == name:
+            return decision.get("disposition", "")
+    return ""
+
+
+def protects(name: str) -> str:
+    seen = disposed(name)
+    if not seen:
+        return Gate.UNTRIAGED
+    if seen == Disposition.QUARANTINE:
+        return Gate.PROTECTED
+    return ""
 
 
 def prompt(proposal: Proposal) -> bool:

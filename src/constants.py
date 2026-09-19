@@ -163,12 +163,18 @@ class Gate:
     NOTHING = "nothing was written"
     DECLINED = "declined, nothing was written"
     SHOWN = "would write {target}"
+    UNTRIAGED = "nothing is known about this message yet, so it cannot be deleted"
+    PROTECTED = "quarantined mail is the record of an attack and is never deleted"
 
 
 class Actions:
     SUFFIX = ".txt"
     HEADERS = ("To", "From", "Subject", "In-Reply-To", "Grounded-In")
     UNSENDABLE = "a refused draft has no body to send"
+    KEPT = ".json"
+    ABSENT = "there is no message {id} in the mailbox"
+    HELD = "the trash holds nothing for {id}"
+    ALREADY = "{id} is in the mailbox already"
 
 
 class Model:
