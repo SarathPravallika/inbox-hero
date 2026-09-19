@@ -1,9 +1,12 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Runs the checks and reports which passed
 
 import importlib
 from utils import heading, rule
 
-SUITES = ("test_constants", "test_store", "test_rules", "test_classify", "test_router")
+SUITES = ("test_constants", "test_store", "test_rules", "test_classify", "test_router",
+          "test_drafts")
 
 def load(name: str):
     return importlib.import_module(name)

@@ -1,4 +1,6 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Proves the disposition vocabulary and capability ids are exactly what the manifest claims
 
 from constants import Capability, Disposition, Tier
 from utils import heading, rule

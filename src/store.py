@@ -1,11 +1,12 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Loads the inbox and makes it answerable by message and by conversation
+# - Messages cannot be edited once loaded, so nothing can rewrite mail during a run
 
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from constants import Paths
-
-FIELDS = {"from": "sender"}
+from constants import Inbox, Paths
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +46,7 @@ class Store:
 
 
 def read(record: dict) -> Message:
-    return Message(**{FIELDS.get(key, key): value for key, value in record.items()})
+    return Message(**{Inbox.FIELDS.get(key, key): value for key, value in record.items()})
 
 
 def load(path: Path = Paths.INBOX) -> Store:

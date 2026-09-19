@@ -1,4 +1,7 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - The only place that talks to a model provider, local or hosted
+# - Spaces requests out and survives rate limits without losing a run
 
 import json
 import time

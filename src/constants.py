@@ -1,4 +1,7 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Every value that can change without touching logic, grouped by the part that reads it
+# - The disposition vocabulary and capability ids the manifest declares
 
 from enum import StrEnum
 from pathlib import Path
@@ -10,6 +13,10 @@ class Paths:
     INBOX = ROOT / "assignment-instructions" / "inbox.json"
     RUN = ROOT / "run.json"
     TRACE = ROOT / "trace.jsonl"
+
+
+class Inbox:
+    FIELDS = {"from": "sender"}
 
 
 class Disposition(StrEnum):
@@ -60,9 +67,29 @@ class Rules:
     BOILERPLATE_LIMIT = 150
 
 
+class Classify:
+    BATCH_SIZE = 10
+    SILENT = "the model returned no usable disposition, so a person has to look"
+
+
+class Drafts:
+    UNGROUNDED = "nothing earlier in this thread grounds an answer"
+    INVENTED = "the draft cited nothing that was actually in the thread"
+
+    SECRETS = (
+        r"://[^/\s:]+:[^/\s@]+@",
+        r"\bpasswords?\b",
+        r"\bpasswd\b",
+        r"\bapi[ _-]?keys?\b",
+        r"\bsecrets?\b",
+        r"\btokens?\b",
+        r"\bcredentials?\b",
+        r"\bcreds\b",
+    )
+
+
 class Model:
     TEMPERATURE = 0.0
-    BATCH_SIZE = 10
     GAP_SECONDS = 4
     RETRIES = 3
     BACKOFF_SECONDS = 20

@@ -1,13 +1,14 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Decides what to do with the mail the rules would not touch
+# - Guarantees every message ends with a decision even when the model answers badly
 
 import prompts
-from constants import Decided, Disposition, Model
+from constants import Classify, Decided, Disposition
 from rules import Decision
 
-SILENT = "the model returned no usable disposition, so a person has to look"
 
-
-def batches(messages: list, size: int = Model.BATCH_SIZE):
+def batches(messages: list, size: int = Classify.BATCH_SIZE):
     for start in range(0, len(messages), size):
         yield messages[start:start + size]
 
@@ -28,7 +29,7 @@ def understood(answers) -> dict:
 
 
 def silent(message) -> Decision:
-    return Decision(id=message.id, disposition=Disposition.ESCALATE, reason=SILENT,
+    return Decision(id=message.id, disposition=Disposition.ESCALATE, reason=Classify.SILENT,
                     by=Decided.MODEL)
 
 

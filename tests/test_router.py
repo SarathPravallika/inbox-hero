@@ -1,4 +1,6 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Proves a full run covers every message once and records it faithfully
 
 import re
 from constants import Decided, Disposition

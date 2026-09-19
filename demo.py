@@ -1,4 +1,8 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - The one command a grader runs to see any capability
+# - Holds a completed run open so ten demonstrations cost one run of model calls
+# - Refuses to start work if the model provider has not been configured
 
 import argparse
 import importlib

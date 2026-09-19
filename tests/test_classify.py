@@ -1,8 +1,10 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Proves no message escapes without a decision, whatever the model returns
 
 import re
-from classify import SILENT, classify
-from constants import Decided, Disposition, Model
+from classify import classify
+from constants import Classify, Decided, Disposition
 from rules import decide
 from store import load
 from utils import heading, rule
@@ -54,7 +56,7 @@ def check_batching(left) -> list[str]:
     classify(left, ask=ask)
     if box["sizes"] != SIZES:
         problems.append(f"batches were {box['sizes']}, not {SIZES}")
-    if box["calls"] * Model.BATCH_SIZE < len(left):
+    if box["calls"] * Classify.BATCH_SIZE < len(left):
         problems.append(f"{box['calls']} calls cannot cover {len(left)} messages")
     return problems
 
@@ -67,7 +69,7 @@ def check_silence(left) -> list[str]:
     for name, why in ((missing, "was left out by the model"), (broken, "came back mangled")):
         if found[name].disposition is not Disposition.ESCALATE:
             problems.append(f"{name} {why} but was not escalated")
-        if found[name].reason != SILENT:
+        if found[name].reason != Classify.SILENT:
             problems.append(f"{name} {why} but does not say so")
     return problems
 

@@ -1,4 +1,7 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Keeps a line by line record of what the system decided and why
+# - The evidence a reviewer reads when asking why a message was treated that way
 
 import json
 from datetime import datetime

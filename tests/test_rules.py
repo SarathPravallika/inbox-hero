@@ -1,4 +1,6 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Proves the rules clear the routine mail and never touch a planted attack
 
 from constants import Decided, Disposition, Rules
 from rules import decide

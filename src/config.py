@@ -1,4 +1,7 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Reads the model provider settings from the environment
+# - Keeps the API key out of the code and out of the repository
 
 import os
 from dotenv import load_dotenv

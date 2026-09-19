@@ -1,4 +1,6 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Proves the inbox loads completely and conversations come back in the right order
 
 from dataclasses import FrozenInstanceError, fields
 from store import Message, load

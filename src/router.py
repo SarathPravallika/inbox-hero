@@ -1,4 +1,7 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Runs the whole inbox once and records the outcome
+# - The run it writes is what every capability reads, so a demonstration never repeats the cost
 
 import json
 import classify

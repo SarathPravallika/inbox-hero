@@ -1,4 +1,7 @@
 # cert-aai-2026-06-0061  Sarath Chandra
+#
+# - Disposes of obvious mail without spending a model call
+# - Only touches what is unmistakably routine, and passes anything unusual on untouched
 
 from dataclasses import dataclass
 from constants import Decided, Disposition, Rules
