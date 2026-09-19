@@ -163,6 +163,7 @@ class Gate:
     NOTHING = "nothing was written"
     DECLINED = "declined, nothing was written"
     SHOWN = "would write {target}"
+    UNASKED = "        there is nobody at the keyboard, so this counts as no"
     UNTRIAGED = "nothing is known about this message yet, so it cannot be deleted"
     PROTECTED = "quarantined mail is the record of an attack and is never deleted"
 

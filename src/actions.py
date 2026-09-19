@@ -48,7 +48,7 @@ def send(draft: Draft, message: Message, ask=None) -> gate.Verdict:
     target = where(message.id)
     proposal = gate.Proposal(action=Action.SEND, id=message.id,
                              detail=f"reply to {message.sender} about {message.subject!r}",
-                             target=named(target))
+                             target=named(target), preview=draft.body.strip())
     if draft.refused or not draft.body.strip():
         return gate.refuse(proposal, Actions.UNSENDABLE)
 

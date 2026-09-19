@@ -3,6 +3,8 @@
 # - The one command a grader runs to see any capability
 # - Holds a completed run open so ten demonstrations cost one run of model calls
 # - Refuses to start work if the model provider has not been configured
+# - Asks about every irreversible action when a person is there to answer, and when nobody
+#   is, shows what it would do and writes nothing
 
 import argparse
 import importlib
@@ -12,7 +14,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from constants import Capability, Paths
+from constants import Answer, Capability, Paths
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -40,7 +42,8 @@ def ensure_run(fresh: bool) -> dict:
     return router.run()
 
 
-def zeroed(artifact: dict, only: str = None) -> None:
+def zeroed(artifact: dict, args) -> None:
+    only = args.msg
     heading("R1  every message carries one disposition and a reason")
     for decision in artifact["decisions"]:
         if only is not None and decision["id"] != only:
@@ -53,7 +56,8 @@ def zeroed(artifact: dict, only: str = None) -> None:
     print(f"undecided: {artifact['messages_processed'] - len(artifact['decisions'])}")
 
 
-def answered(artifact: dict, only: str = None) -> None:
+def answered(artifact: dict, args) -> None:
+    only = args.msg
     heading("R2  replies grounded in earlier mail, or refused")
     made = [d for d in artifact["drafts"] if only is None or d["id"] == only]
 
@@ -71,11 +75,69 @@ def answered(artifact: dict, only: str = None) -> None:
           f"{sum(len(d['cited']) for d in drafted)} citations, all checked against the store")
 
 
-VIEWS = {Capability.R1: zeroed, Capability.R2: answered}
+def asking(args) -> bool:
+    if args.dry_run:
+        return False
+    return bool(args.approve) or sys.stdin.isatty()
+
+
+def show(verdict, asked: bool = False) -> None:
+    proposal = verdict.proposal
+    gate = importlib.import_module("gate")
+    if not asked or verdict.answer == Answer.REFUSED:
+        print(f"  {proposal.id}  {proposal.detail}")
+    print(f"        {proposal.action} / {gate.risk(proposal.action)} / "
+          f"{verdict.answer}: {verdict.outcome}")
+
+
+def gated(artifact: dict, args) -> None:
+    actions = importlib.import_module("actions")
+    drafts = importlib.import_module("drafts")
+    gate = importlib.import_module("gate")
+    store = importlib.import_module("store")
+    ask = gate.prompt if asking(args) else None
+
+    heading("R3  nothing irreversible happens unless a person says so")
+    if args.delete:
+        why = gate.decision(args.delete).get("reason") or "no reason was given"
+        show(actions.remove(args.delete, why, ask=ask), asked=bool(ask))
+        rule()
+        print(f"mailbox holds {len(actions.carried())}, trash holds {len(actions.held())}")
+        return
+    if args.restore:
+        show(actions.restore(args.restore, ask=ask), asked=bool(ask))
+        rule()
+        print(f"mailbox holds {len(actions.carried())}, trash holds {len(actions.held())}")
+        return
+
+    box = store.load()
+    written, logged = len(actions.sent()), len(gate.records())
+    wanted = [record for record in artifact["drafts"] if args.msg in (None, record["id"])]
+    sendable = [record for record in wanted if not record["refused"]]
+
+    for record in wanted:
+        if record["refused"]:
+            print(f"  {record['id']}  not proposed: {record['refused']}")
+
+    verdicts = []
+    for record in sendable:
+        verdict = actions.send(drafts.read(record), box.message(record["id"]), ask=ask)
+        show(verdict, asked=bool(ask))
+        verdicts.append(verdict)
+    rule()
+    approved = [verdict for verdict in verdicts if verdict.went_ahead]
+    print(f"{len(verdicts)} proposed, {len(approved)} approved, "
+          f"outbox/ writes: {len(actions.sent()) - written}")
+    print(f"refused at drafting and never put to a person: {len(wanted) - len(sendable)}")
+    print(f"approval records this run: {len(gate.records()) - logged}, appended to "
+          f"approvals.jsonl, which is never rewritten")
+
+
+VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated}
 
 
 def capability(name: str, args) -> None:
-    if name not in Capability:
+    if name not in tuple(Capability):
         print(f"There is no capability called {name}")
         raise SystemExit(f"Capabilities: {', '.join(Capability)}")
 
@@ -84,10 +146,7 @@ def capability(name: str, args) -> None:
     if view is None:
         print(f"{name} is not built yet.")
         return
-    if args.msg:
-        view(artifact, args.msg)
-        return
-    view(artifact)
+    view(artifact, args)
 
 
 def main() -> None:
@@ -107,6 +166,27 @@ def main() -> None:
         "--fresh",
         action="store_true",
         help="rebuild the run from the inbox instead of reading the artifact on disk",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="show every irreversible action and write nothing, without asking anybody",
+    )
+    parser.add_argument(
+        "--approve",
+        action="store_true",
+        help="ask about each irreversible action even when nothing is reading the keyboard; "
+             "at a terminal this happens anyway",
+    )
+    parser.add_argument(
+        "--delete",
+        metavar="ID",
+        help="take one message out of the mailbox, keeping the whole of it in trash/",
+    )
+    parser.add_argument(
+        "--restore",
+        metavar="ID",
+        help="put a message from trash/ back where it came from",
     )
     parser.add_argument(
         "--test",

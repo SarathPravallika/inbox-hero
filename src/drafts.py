@@ -22,6 +22,14 @@ class Draft:
     dropped: tuple[str, ...] = ()
 
 
+def read(record: dict) -> Draft:
+    return Draft(id=record["id"],
+                 body=record.get("body") or "",
+                 cited=tuple(record.get("cited") or ()),
+                 refused=record.get("refused") or "",
+                 dropped=tuple(record.get("dropped") or ()))
+
+
 def secret(text: str) -> bool:
     return any(re.search(pattern, text, re.I) for pattern in Drafts.SECRETS)
 

@@ -10,6 +10,7 @@ import json
 from dataclasses import dataclass, replace
 from datetime import datetime
 from constants import Action, Answer, Disposition, Gate, Paths, Risk
+from utils import wrap
 
 
 @dataclass(frozen=True, slots=True)
@@ -18,6 +19,7 @@ class Proposal:
     id: str
     detail: str
     target: str = ""
+    preview: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,13 +41,17 @@ def guarded(action: Action) -> bool:
     return Action(action) in Gate.APPROVAL
 
 
-def disposed(name: str) -> str:
+def decision(name: str) -> dict:
     if not Paths.RUN.exists():
-        return ""
-    for decision in json.loads(Paths.RUN.read_text()).get("decisions", ()):
-        if decision.get("id") == name:
-            return decision.get("disposition", "")
-    return ""
+        return {}
+    for made in json.loads(Paths.RUN.read_text()).get("decisions", ()):
+        if made.get("id") == name:
+            return made
+    return {}
+
+
+def disposed(name: str) -> str:
+    return decision(name).get("disposition", "")
 
 
 def protects(name: str) -> str:
@@ -58,8 +64,18 @@ def protects(name: str) -> str:
 
 
 def prompt(proposal: Proposal) -> bool:
-    print(f"  {proposal.action} {proposal.id}: {proposal.detail}")
-    return input(Gate.ASKED.format(action=proposal.action)).strip().lower() in ("y", "yes")
+    print(f"  {proposal.id}  {proposal.detail}")
+    print(f"        {risk(proposal.action)}, and it would write {proposal.target}")
+    if proposal.preview:
+        print()
+        print(wrap(proposal.preview, 8))
+    print()
+    try:
+        said = input(Gate.ASKED.format(action=proposal.action))
+    except EOFError:
+        print(Gate.UNASKED)
+        return False
+    return said.strip().lower() in ("y", "yes")
 
 
 def refuse(proposal: Proposal, why: str) -> Verdict:
