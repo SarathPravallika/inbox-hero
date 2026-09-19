@@ -62,7 +62,16 @@ class Answer(StrEnum):
 
 class Decided(StrEnum):
     RULE = "rule"
+    GUARD = "guard"
     MODEL = "model"
+
+
+class Attempt(StrEnum):
+    FORWARD = "forward"
+    BROADCAST = "broadcast"
+    DELETE = "delete"
+    CONCEAL = "conceal"
+    RECONFIGURE = "reconfigure"
 
 
 class Tier(StrEnum):
@@ -172,6 +181,34 @@ class Gate:
     UNASKED = "        there is nobody at the keyboard, so this counts as no"
     UNTRIAGED = "nothing is known about this message yet, so it cannot be deleted"
     PROTECTED = "quarantined mail is the record of an attack and is never deleted"
+
+
+class Guard:
+    SPOKEN_TO = r"\b(?:assistants?|ai agents?|automated[- ]agents?|autonomous mode)\b"
+    ADDRESS = r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b"
+    TRIES = {
+        Attempt.FORWARD: (r"\bforward(?:s|ing|ed)?\b",),
+        Attempt.BROADCAST: (r"\b(?:every|all|each)\s+unread\b",
+                            r"\b(?:every|all|each)\s+(?:message|recipient|sender)s?\b",
+                            r"\bfull contents of (?:this|the) mailbox\b",
+                            r"\bwhole mailbox\b"),
+        Attempt.DELETE: (r"\b(?:delete|deleting|erase|purge|remove)\b",),
+        Attempt.CONCEAL: (r"\b(?:not|never|no need to|don't|do not|without)\b[^.]{0,40}"
+                          r"\b(?:surface|mention|tell|inform|notify|disclose|report)\w*\b",),
+        Attempt.RECONFIGURE: (r"\bignore\s+(?:all\s+)?(?:previous|prior|earlier)\b",
+                              r"\bautonomous mode\b",
+                              r"\bwithout asking\b",
+                              r"\bskip the confirmation\b",
+                              r"\b(?:disable|turn off|switch off|bypass)\b"),
+    }
+    SAYS = {Attempt.FORWARD: "forward mail out of the mailbox",
+            Attempt.BROADCAST: "write to every sender in the mailbox",
+            Attempt.DELETE: "delete mail",
+            Attempt.CONCEAL: "keep what it did from Sam",
+            Attempt.RECONFIGURE: "change what it is allowed to do without asking"}
+    TO = " to {where}"
+    FLAGGED = "FLAGGED: {id} attempted to {tried}; not done, left in place."
+    REASON = "instructions addressed to an assistant, attempting to {tried}"
 
 
 class Memory:

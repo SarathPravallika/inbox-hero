@@ -1,6 +1,7 @@
 # cert-aai-2026-06-0061  Sarath Chandra
 #
 # - Runs the whole inbox once and records the outcome
+# - The guard reads every message first, so hostile mail never reaches the rules or the model
 # - The run it writes is what every capability reads, so a demonstration never repeats the cost
 # - Keeps the meaning-based index current even though the run does not use it, so the
 #   comparison that ruled it out stays reproducible from a clean checkout
@@ -12,6 +13,7 @@ from dataclasses import asdict
 
 import classify
 import drafts
+import guard
 import memory
 import retrieve
 import rules
@@ -24,7 +26,7 @@ def sorted_out(store, ask=None) -> list:
     decided, waiting = {}, []
 
     for message in store.messages:
-        decision = rules.decide(message)
+        decision = guard.decide(message) or rules.decide(message)
         if decision is None:
             waiting.append(message)
         else:
@@ -56,8 +58,12 @@ def build(store, decisions, written_drafts, standing, recorded, provider: str,
         "provider": provider,
         "model": model,
         "messages_processed": len(store),
-        "rule_handled": counted(decisions, Decided.RULE),
+        "rule_handled": len(decisions) - counted(decisions, Decided.MODEL),
+        "guard_handled": counted(decisions, Decided.GUARD),
         "model_handled": counted(decisions, Decided.MODEL),
+        "refusals": [{"id": t.id, "attempted": list(t.attempts), "where": list(t.where),
+                      "said": t.said, "flagged": guard.flagged(t)}
+                     for t in guard.sweep(store)],
         "standing": [asdict(one) for one in standing],
         "recorded": [asdict(one) for one in recorded if not one.refused],
         "refused_preferences": [asdict(one) for one in recorded if one.refused],
@@ -79,6 +85,8 @@ def written(artifact: dict) -> dict:
         tracing.record(Capability.R1, "decision", **decision)
     for made in artifact["drafts"]:
         tracing.record(Capability.R2, "refusal" if made["refused"] else "draft", **made)
+    for one in artifact["refusals"]:
+        tracing.record(Capability.R5, "refusal", **one)
     for one in artifact["standing"]:
         tracing.record(Capability.R4, "in force", **one)
     for one in artifact["recorded"]:
