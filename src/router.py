@@ -19,7 +19,7 @@ import memory
 import retrieve
 import rules
 import tracing
-from constants import Capability, Decided, Disposition, Paths
+from constants import Capability, Decided, Disposition, Paths, Trace
 from store import load
 
 
@@ -84,6 +84,12 @@ def build(store, decisions, written_drafts, standing, recorded, diary, provider:
     }
 
 
+def renamed(one: dict, name: str) -> dict:
+    carried = dict(one)
+    carried[name] = carried.pop("at")
+    return carried
+
+
 def written(artifact: dict) -> dict:
     tracing.start()
     tracing.record(Capability.R1, "run", messages=artifact["messages_processed"],
@@ -95,15 +101,15 @@ def written(artifact: dict) -> dict:
     for one in artifact["refusals"]:
         tracing.record(Capability.R5, "refusal", **one)
     for one in artifact["commitments"]:
-        tracing.record(Capability.R6, "commitment", **one)
+        tracing.record(Capability.R6, "commitment", **renamed(one, Trace.CLOCK))
     for one in artifact["conflicts"]:
-        tracing.record(Capability.R6, "conflict", **one)
+        tracing.record(Capability.R6, "conflict", **renamed(one, Trace.CLOCK))
     for one in artifact["standing"]:
-        tracing.record(Capability.R4, "in force", **one)
+        tracing.record(Capability.R4, "in force", **renamed(one, Trace.FIRST))
     for one in artifact["recorded"]:
-        tracing.record(Capability.R4, "remembered", **one)
+        tracing.record(Capability.R4, "remembered", **renamed(one, Trace.FIRST))
     for one in artifact["refused_preferences"]:
-        tracing.record(Capability.R4, "refusal", **one)
+        tracing.record(Capability.R4, "refusal", **renamed(one, Trace.FIRST))
     Paths.RUN.write_text(json.dumps(artifact, indent=2) + "\n")
     return artifact
 

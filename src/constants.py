@@ -370,6 +370,74 @@ class Actions:
     ALREADY = "{id} is in the mailbox already"
 
 
+class Trace:
+    RESERVED = ("at", "cap", "event")
+    SHADOWED = "a {event} event tried to write over the trace's own {names}"
+    CLOCK = "clock"
+    FIRST = "first"
+
+
+class Why:
+    HEAD = "X4  why {id} was treated that way"
+    HEADLESS = "X4  why any one message was treated the way it was"
+    ASK = "this accounts for one message at a time, so it needs --msg"
+    TRY = "try: python demo.py --cap X4 --msg {id}"
+    OTHERS = "or any of: {ids}"
+    MISSING = "there is no message {id} in this mailbox, and no run has decided one"
+
+    ARRIVED = "arrived"
+    DECIDED = "decided"
+    GUARDED = "the guard"
+    DRAFTED = "reply"
+    DATED = "calendar"
+    PREFERRED = "standing instructions"
+    APPROVED = "approval"
+    TRACED = "trace"
+
+    MAILBOX = "mailbox.json"
+    RUN = "run.json, {part}"
+    APPROVALS = "approvals.jsonl"
+    TRACE = "trace.jsonl"
+
+    SUBJECT = "{subject}"
+    SENDER = "from {sender} to {to}, {at}"
+    THREAD = "thread {thread}, message {place} of {count}"
+    GONE = "it is not in the mailbox now, so trash/ is where to look for it"
+
+    BY = {Decided.RULE: "{disposition}, by a rule, with no model call",
+          Decided.GUARD: "{disposition}, by the guard, with no model call",
+          Decided.MODEL: "{disposition}, by the model"}
+    UNDECIDED = "no run has reached a decision about it"
+    COPIED = "copy to {copy}"
+
+    UNTOUCHED = "it says nothing to an assistant, so the guard left it alone"
+    ATTEMPTED = "it attempted: {tried}"
+    NAMED = "it named: {where}"
+
+    NOT_REPLY = "only mail disposed reply is drafted for, and this one is {disposition}"
+    REFUSED_DRAFT = "refused, and the refusal is the answer: {why}"
+    CITED = "drafted, citing {cited}"
+    UNCITED = "drafted citing nothing, which is allowed because it commits to nothing"
+
+    NO_DATES = "nothing on the calendar was taken from it"
+    OFF_CALENDAR = ("nothing quarantined is read for dates, so whatever it demands never "
+                    "reaches the calendar")
+    ON_CALENDAR = "{when} {at} {settled:<9} {what}"
+
+    NO_PREFERENCE = "nothing was recorded from it, and no standing instruction touched it"
+    RECORDED = "recorded from it: {said}"
+    APPLIED = "{who} was copied because of {source}"
+    LEANED = "the reply cites {source}, which is a standing instruction and not a message"
+
+    NO_APPROVAL = "nothing about it was ever put to a person"
+    ANSWERED = "{action} {answer} at {at}, {outcome}"
+
+    NO_TRACE = "the trace from the last run carries nothing for it"
+    EVENT = "{at}  cap={cap}  {event}"
+
+    CLOSE = "{sections} sections read from {files} files, nothing worked out on the spot"
+
+
 class Model:
     TEMPERATURE = 0.0
     GAP_SECONDS = 4

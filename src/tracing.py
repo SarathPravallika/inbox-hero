@@ -2,10 +2,11 @@
 #
 # - Keeps a line by line record of what the system decided and why
 # - The evidence a reviewer reads when asking why a message was treated that way
+# - Every line carries when it was written, and a payload may not overwrite that
 
 import json
 from datetime import datetime
-from constants import Paths
+from constants import Paths, Trace
 
 
 def stamp() -> str:
@@ -17,6 +18,9 @@ def start() -> None:
 
 
 def record(cap: str, event: str, **fields) -> None:
+    shadowed = sorted(set(fields) & set(Trace.RESERVED))
+    if shadowed:
+        raise ValueError(Trace.SHADOWED.format(event=event, names=", ".join(shadowed)))
     with open(Paths.TRACE, "a") as handle:
         handle.write(json.dumps({"at": stamp(), "cap": cap, "event": event, **fields}) + "\n")
 

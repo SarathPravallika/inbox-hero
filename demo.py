@@ -14,7 +14,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(ROOT / "src"))
 
-from constants import Answer, Capability, Dashboard, Decided, Guard, Kind, Paths
+from constants import (Answer, Capability, Dashboard, Decided, Guard, Kind, Paths,
+                       WIDTH, Why)
 from utils import heading, rule, wrap
 
 def sibling(folder: str, module: str):
@@ -306,8 +307,42 @@ def shown(artifact: dict, args) -> None:
     print(f"written to {Paths.DASHBOARD.name} and {Paths.PAGE.name}")
 
 
+def titled(told) -> str:
+    return f"  {told.label:<{WIDTH - 2 - len(told.source)}}{told.source}"
+
+
+def accounted(artifact: dict, args) -> None:
+    why = importlib.import_module("why")
+    store = importlib.import_module("store")
+    box = store.load()
+
+    if not args.msg:
+        heading(Why.HEADLESS)
+        print(f"  {Why.ASK}")
+        wanted = why.suggestions(artifact)
+        print(f"  {Why.TRY.format(id=wanted[0])}")
+        print(f"  {Why.OTHERS.format(ids=', '.join(wanted[1:]))}")
+        return
+
+    if not why.known(args.msg, artifact, box):
+        heading(Why.HEADLESS)
+        print(f"  {Why.MISSING.format(id=args.msg)}")
+        return
+
+    heading(Why.HEAD.format(id=args.msg))
+    told = why.account(args.msg, artifact, box)
+    for one in told:
+        print(titled(one))
+        for line in one.lines:
+            print(wrap(line, 8))
+        print()
+    rule()
+    print(Why.CLOSE.format(sections=len(told), files=len(why.files(told))))
+
+
 VIEWS = {Capability.R1: zeroed, Capability.R2: answered, Capability.R3: gated,
-         Capability.R4: remembered, Capability.R5: refused, Capability.R6: shown}
+         Capability.R4: remembered, Capability.R5: refused, Capability.R6: shown,
+         Capability.X4: accounted}
 
 
 def capability(name: str, args) -> None:
