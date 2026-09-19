@@ -175,11 +175,21 @@ class Gate:
 
 
 class Memory:
+    NONE = "none"
     CLOCK = r"\b\d{1,2}:\d{2}\s*(?:am|pm)\b"
+    BOUNDS = ("no earlier than", "not before", "earlier than", "later than",
+              "before", "after", "from", "until", "past")
+    OPPOSITE = {"no earlier than": "before", "not before": "before", "earlier than": "before",
+                "later than": "after", "before": "before", "after": "after",
+                "from": "before", "until": "after", "past": "after"}
+    REACH = 40
     SHORTEST = 5
     MEETINGS = "meetings"
     SOURCE = "email:{id}"
-    WANTED = {Kind.SCHEDULING: "a time of day",
+    SAYS = {Kind.SCHEDULING: "Sam does not take {subject} {bound} {value}.",
+            Kind.COPYING: "{value} is copied on everything from {subject}."}
+    FROM = "email:"
+    WANTED = {Kind.SCHEDULING: "a time of day and whether it is a floor or a ceiling",
               Kind.COPYING: "a correspondent this mailbox has heard from"}
     SHAPELESS = "a {kind} preference has to name {wanted}, and this one names none"
     UNKNOWN = "there is no kind of preference called {kind}"

@@ -14,6 +14,7 @@ class Decision:
     disposition: Disposition
     reason: str
     by: Decided
+    preference: str = ""
 
 
 def automated(message: Message) -> bool:

@@ -4,7 +4,7 @@
 # - Guarantees every message ends with a decision even when the model answers badly
 
 import prompts
-from constants import Classify, Decided, Disposition
+from constants import Classify, Decided, Disposition, Memory
 from rules import Decision
 
 
@@ -22,9 +22,11 @@ def understood(answers) -> dict:
             continue
         name = answer.get("id")
         reason = str(answer.get("reason") or "").strip()
+        claimed = str(answer.get("preference") or Memory.NONE)
         if name and reason:
             found[name] = Decision(id=name, disposition=disposition, reason=reason,
-                                   by=Decided.MODEL)
+                                   by=Decided.MODEL,
+                                   preference="" if claimed == Memory.NONE else claimed)
     return found
 
 

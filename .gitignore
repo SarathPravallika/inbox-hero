@@ -219,3 +219,4 @@ __marimo__/
 
 # inboxHero working state, rebuilt from assignment-instructions/inbox.json when absent
 mailbox.json
+memory.json

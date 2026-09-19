@@ -10,7 +10,8 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from constants import Kind, Memory, Paths
-from memory import about, clocked, flattened, held, keep, recall, remember
+from memory import (about, bounded, clocked, copies, flattened, held, instruction, keep,
+                    recall, remember)
 from store import load
 from utils import heading, rule
 
@@ -81,6 +82,36 @@ def check_shapes(store) -> list[str]:
     return problems
 
 
+def check_speaking(store) -> list[str]:
+    problems = []
+    when = remember(Kind.SCHEDULING, store.message(SCHEDULING), store)
+    who = remember(Kind.COPYING, store.message(COPYING), store)
+    if when.bound != "before":
+        problems.append(f"{SCHEDULING} recorded the bound {when.bound!r}, not 'before'")
+    if bounded("nothing at all 9:00am", "9:00am"):
+        problems.append("a time with no floor or ceiling was given one anyway")
+    if remember(Kind.SCHEDULING, store.message(COPYING), store).bound:
+        problems.append("a message with no time of day was given a bound")
+
+    spoken = {instruction(when), instruction(who)}
+    if instruction(when) != "Sam does not take meetings before 11:00am.":
+        problems.append(f"the scheduling rule reads {instruction(when)!r}")
+    if instruction(who) != f"{COPIES} is copied on everything from {LAWYERS}.":
+        problems.append(f"the copying rule reads {instruction(who)!r}")
+    for leaked in ("assistant", "please remember", "standing request", "loop me in", "deadline"):
+        for said in spoken:
+            if leaked in said.lower():
+                problems.append(f"the mail's own words reached the model: {leaked!r}")
+
+    for name in ("m018", "m048", "m055"):
+        if copies(store.message(name), (who,)) != (COPIES,):
+            problems.append(f"{name} is from the lawyers but nobody is copied on it")
+    for name in (SCHEDULING, HOSTILE, "m010"):
+        if copies(store.message(name), (who,)):
+            problems.append(f"{name} is not from the lawyers but somebody is copied on it")
+    return problems
+
+
 def check_hostile(store) -> list[str]:
     problems = []
     for kind in Kind:
@@ -122,9 +153,14 @@ def check_persistence(store) -> list[str]:
         if any(one.refused for one in again):
             problems.append("a refused preference was written to disk")
 
+        first = {one.source: one.at for one in held()}
+        if not all(first.values()):
+            problems.append("a preference was written with no record of when")
         keep([remember(Kind.SCHEDULING, store.message(SCHEDULING), store)])
         if len(held()) != 2:
             problems.append("recording the same preference twice made a second copy")
+        if {one.source: one.at for one in held()} != first:
+            problems.append("re-recording a preference moved the time it was first written")
         if len(recall(Kind.COPYING)) != 1 or len(recall(Kind.SCHEDULING)) != 1:
             problems.append("preferences cannot be recalled one kind at a time")
 
@@ -139,7 +175,8 @@ def run() -> bool:
     store = load()
     problems = []
     for name, check in (("reading", check_reading), ("shapes", check_shapes),
-                        ("hostile", check_hostile), ("persistence", check_persistence)):
+                        ("speaking", check_speaking), ("hostile", check_hostile),
+                        ("persistence", check_persistence)):
         found = check(store)
         print(f"  {'FAIL' if found else 'pass'}  {name}")
         problems.extend(found)

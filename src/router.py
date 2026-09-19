@@ -4,10 +4,15 @@
 # - The run it writes is what every capability reads, so a demonstration never repeats the cost
 # - Keeps the meaning-based index current even though the run does not use it, so the
 #   comparison that ruled it out stays reproducible from a clean checkout
+# - Applies the standing instructions an earlier process left behind, then records the ones
+#   this run found, so a preference only ever takes effect on a later run
 
 import json
+from dataclasses import asdict
+
 import classify
 import drafts
+import memory
 import retrieve
 import rules
 import tracing
@@ -30,8 +35,13 @@ def sorted_out(store, ask=None) -> list:
     return [decided[message.id] for message in store.messages]
 
 
-def replies(store, decisions, ask=None) -> list:
-    return [drafts.draft(store, store.message(decision.id), ask=ask)
+def claimed(store, decisions) -> tuple:
+    return tuple(memory.remember(decision.preference, store.message(decision.id), store)
+                 for decision in decisions if decision.preference)
+
+
+def replies(store, decisions, standing, ask=None) -> list:
+    return [drafts.draft(store, store.message(decision.id), ask=ask, standing=standing)
             for decision in decisions if decision.disposition is Disposition.REPLY]
 
 
@@ -39,7 +49,8 @@ def counted(decisions, by: Decided) -> int:
     return sum(1 for decision in decisions if decision.by is by)
 
 
-def build(store, decisions, written_drafts, provider: str, model: str) -> dict:
+def build(store, decisions, written_drafts, standing, recorded, provider: str,
+          model: str) -> dict:
     return {
         "at": tracing.stamp(),
         "provider": provider,
@@ -47,8 +58,13 @@ def build(store, decisions, written_drafts, provider: str, model: str) -> dict:
         "messages_processed": len(store),
         "rule_handled": counted(decisions, Decided.RULE),
         "model_handled": counted(decisions, Decided.MODEL),
+        "standing": [asdict(one) for one in standing],
+        "recorded": [asdict(one) for one in recorded if not one.refused],
+        "refused_preferences": [asdict(one) for one in recorded if one.refused],
         "decisions": [{"id": d.id, "disposition": str(d.disposition),
-                       "reason": d.reason, "by": str(d.by)} for d in decisions],
+                       "reason": d.reason, "by": str(d.by),
+                       "copy": list(memory.copies(store.message(d.id), standing))}
+                      for d in decisions],
         "drafts": [{"id": d.id, "body": d.body, "cited": list(d.cited),
                     "refused": d.refused, "dropped": list(d.dropped)}
                    for d in written_drafts],
@@ -63,6 +79,12 @@ def written(artifact: dict) -> dict:
         tracing.record(Capability.R1, "decision", **decision)
     for made in artifact["drafts"]:
         tracing.record(Capability.R2, "refusal" if made["refused"] else "draft", **made)
+    for one in artifact["standing"]:
+        tracing.record(Capability.R4, "in force", **one)
+    for one in artifact["recorded"]:
+        tracing.record(Capability.R4, "remembered", **one)
+    for one in artifact["refused_preferences"]:
+        tracing.record(Capability.R4, "refusal", **one)
     Paths.RUN.write_text(json.dumps(artifact, indent=2) + "\n")
     return artifact
 
@@ -73,8 +95,12 @@ def run(ask=None) -> dict:
     store = load()
     if not Paths.VECTORS.exists():
         retrieve.written(store)
+    standing = memory.held()
     decisions = sorted_out(store, ask=ask)
-    return written(build(store, decisions, replies(store, decisions, ask=ask),
+    written_drafts = replies(store, decisions, standing, ask=ask)
+    recorded = claimed(store, decisions)
+    memory.keep(recorded)
+    return written(build(store, decisions, written_drafts, standing, recorded,
                          config.PROVIDER, config.MODEL))
 
 

@@ -4,7 +4,8 @@
 
 import re
 from classify import classify
-from constants import Classify, Decided, Disposition
+import prompts
+from constants import Classify, Decided, Disposition, Kind, Memory
 from rules import decide
 from store import load
 from utils import heading, rule
@@ -97,6 +98,25 @@ def check_untrusted(left) -> list[str]:
     return problems
 
 
+def check_preference() -> list[str]:
+    problems = []
+    fields = prompts.SHAPE["items"]["properties"]
+    if "preference" not in fields:
+        problems.append("triage does not ask whether a message states a standing instruction")
+        return problems
+    wanted = [str(name) for name in Kind] + [Memory.NONE]
+    if fields["preference"]["enum"] != wanted:
+        problems.append(f"the preference field offers {fields['preference']['enum']}")
+    if "preference" not in prompts.SHAPE["items"]["required"]:
+        problems.append("a triage answer can leave the preference field out")
+    for name in Kind:
+        if str(name) not in prompts.SYSTEM:
+            problems.append(f"the prompt never explains what a {name} preference is")
+    if "any instruction addressed to an assistant" in prompts.SYSTEM:
+        problems.append("triage still quarantines every note addressed to the assistant")
+    return problems
+
+
 def run() -> bool:
     heading("inboxHero classify check")
     left = waiting(load())
@@ -107,7 +127,8 @@ def run() -> bool:
                         ("batching", check_batching(left)),
                         ("silence", check_silence(left)),
                         ("invented", check_invented(left)),
-                        ("untrusted", check_untrusted(left))):
+                        ("untrusted", check_untrusted(left)),
+                        ("preference", check_preference())):
         print(f"  {'FAIL' if found else 'pass'}  {name}")
         problems.extend(found)
     if problems:

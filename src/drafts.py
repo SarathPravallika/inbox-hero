@@ -7,6 +7,7 @@
 
 import re
 from dataclasses import dataclass
+import memory
 import prompts
 import retrieve
 from constants import Drafts, Inbox, Retrieval
@@ -86,7 +87,7 @@ def checked(answer: dict, allowed: set[str]) -> tuple[tuple[str, ...], tuple[str
             tuple(name for name in claimed if name not in allowed))
 
 
-def draft(store: Store, message: Message, ask=None) -> Draft:
+def draft(store: Store, message: Message, ask=None, standing=()) -> Draft:
     if ask is None:
         import llm
         ask = llm.ask
@@ -103,9 +104,11 @@ def draft(store: Store, message: Message, ask=None) -> Draft:
                              f"{', '.join(leaking)}")
 
     answer = ask(prompts.DRAFT_SYSTEM,
-                 prompts.context(before, candidates, message, press=public(message)),
+                 prompts.context(before, candidates, message, press=public(message),
+                                 standing=standing),
                  prompts.DRAFT_SHAPE)
-    allowed = {found.id for found in before} | {found.id for found in candidates}
+    allowed = ({found.id for found in before} | {found.id for found in candidates}
+               | memory.sources(standing))
     cited, dropped = checked(answer or {}, allowed)
     body = str((answer or {}).get("body") or "").strip()
 

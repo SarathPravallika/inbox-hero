@@ -3,14 +3,18 @@
 # - Proves a full run covers every message once and records it faithfully
 
 import re
-from constants import Decided, Disposition, Drafts
-from router import build, counted, replies, sorted_out
+from constants import Decided, Disposition, Drafts, Kind
+from memory import remember
+from router import build, claimed, counted, replies, sorted_out
 from store import load
 from utils import heading, rule
 
 COUNT = 100
 BY_RULE = 56
 BY_MODEL = 44
+LEGAL = {"m018", "m048", "m055"}
+COPIES = "priya@paperjet.io"
+STANDING = ()
 
 def fake(skip=()):
     def ask(system, text, shape):
@@ -58,7 +62,7 @@ def check_silent_model(store) -> list[str]:
 def check_drafts(store, decisions) -> list[str]:
     problems = []
     wanted = [d.id for d in decisions if d.disposition is Disposition.REPLY]
-    made = replies(store, decisions, ask=lambda system, text, shape:
+    made = replies(store, decisions, STANDING, ask=lambda system, text, shape:
                    {"body": "drafted by the fake", "cited": ["m010"]})
     if [d.id for d in made] != wanted:
         problems.append("a reply was left without a draft or refusal")
@@ -77,15 +81,22 @@ def check_drafts(store, decisions) -> list[str]:
 
 def check_artifact(store, decisions) -> list[str]:
     problems = []
-    made = replies(store, decisions, ask=lambda system, text, shape:
+    standing = (remember(Kind.COPYING, store.message("m015"), store),)
+    made = replies(store, decisions, STANDING, ask=lambda system, text, shape:
                    {"body": "drafted by the fake", "cited": ["m010"]})
-    artifact = build(store, decisions, made, "fake", "fake-model")
+    recorded = claimed(store, decisions)
+    artifact = build(store, decisions, made, standing, recorded, "fake", "fake-model")
     if len(artifact["drafts"]) != len(made):
         problems.append("the artifact lost a draft")
     for row in artifact["drafts"]:
         if set(row) != {"id", "body", "cited", "refused", "dropped"}:
             problems.append(f"draft {row.get('id')} has fields {', '.join(sorted(row))}")
             break
+    lawyers = [row for row in artifact["decisions"] if row["copy"]]
+    if {row["id"] for row in lawyers} != LEGAL:
+        problems.append(f"the copying rule reached {sorted(row['id'] for row in lawyers)}")
+    if any(row["copy"] != [COPIES] for row in lawyers):
+        problems.append(f"a legal message is copied to somebody other than {COPIES}")
     if artifact["messages_processed"] != COUNT:
         problems.append(f"the artifact says {artifact['messages_processed']} messages")
     if artifact["rule_handled"] != BY_RULE:
@@ -93,7 +104,7 @@ def check_artifact(store, decisions) -> list[str]:
     if len(artifact["decisions"]) != COUNT:
         problems.append("the artifact lost a decision")
     for row in artifact["decisions"]:
-        if set(row) != {"id", "disposition", "reason", "by"}:
+        if set(row) != {"id", "disposition", "reason", "by", "copy"}:
             problems.append(f"{row.get('id')} has fields {', '.join(sorted(row))}")
             break
         if not isinstance(row["disposition"], str):
