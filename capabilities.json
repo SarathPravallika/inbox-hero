@@ -1,0 +1,122 @@
+{
+  "student": "Sarath Chandra, cert-aai-2026-06-0061",
+  "repo": "https://github.com/SarathPravallika/inbox-hero",
+  "system": {
+    "framework": "none",
+    "model": "gemini-3.1-flash-lite for every model call and for development too: triage, drafting, commitments, thread digests, chases and counter-offers. PROVIDER also switches to a local model through Ollama, which was used for early testing.",
+    "messages_processed": 100,
+    "rule_handled": 60,
+    "dispositions": [
+      "reply",
+      "archive",
+      "defer",
+      "delegate",
+      "escalate",
+      "quarantine"
+    ],
+    "retrieval": "thread-walk plus IDF keyword",
+    "irreversible": [
+      "send"
+    ],
+    "reversible": [
+      "delete",
+      "restore",
+      "draft",
+      "label"
+    ],
+    "gate": "both",
+    "preference_demo": "m015: CC priya@paperjet.io on anything from Hartwell & Cho"
+  },
+  "capabilities": [
+    {
+      "id": "R1",
+      "name": "Zero the inbox",
+      "tier": "B",
+      "claim": "Gives every message exactly one disposition from a closed six-value vocabulary, with a one-line reason and which of rule, guard or model decided it, leaving none untouched.",
+      "command": "python demo.py --cap R1",
+      "observable": "Prints 100 rows, each carrying a disposition, who decided it and a reason, then 'undecided: 0' and the split: 60 messages without a model, 4 of those by the guard, and 40 by the model. It closes by naming m017, m024, m039 and m047 as quarantined without a model call, unprompted.",
+      "evidence": "trace.jsonl, events tagged cap=R1 - one 'run' event and 100 'decision' events."
+    },
+    {
+      "id": "R2",
+      "name": "Grounded reply",
+      "tier": "B",
+      "claim": "Drafts replies grounded in specific earlier messages and records the ids drawn on, and refuses rather than answering when nothing grounds the answer or when answering would disclose a credential.",
+      "command": "python demo.py --cap R2",
+      "observable": "Prints 4 drafts and 5 refusals. m043 and m051 cite m041, m016 cites m013, m046 cites m036, and every cited id is a real message that genuinely came earlier. m008 is refused naming m003, which really does hold a live staging AMQP password. Run with --msg m008 for that refusal alone.",
+      "evidence": "trace.jsonl, events tagged cap=R2 - four 'draft' and five 'refusal' events, each cited id present in the mailbox."
+    },
+    {
+      "id": "R3",
+      "name": "Gate the irreversible",
+      "tier": "C",
+      "claim": "Never sends or deletes without either per-action approval or an explicit --dry-run showing what it would do, and refuses to delete quarantined mail even when a person approves it.",
+      "command": "python demo.py --cap R3 --dry-run",
+      "observable": "Lists every send it would make, the risk class and the file it would write, then 'outbox/ writes: 0'. Without --dry-run it asks y/N before each one. 'python demo.py --cap R3 --delete m113' and '--restore m113' take a message out and put it back at the same index; '--cap R3 --delete m024' is refused because it is quarantined.",
+      "evidence": "approvals.jsonl - nine rows from one pass: three approved sends, one declined send that wrote nothing, an approved delete, an unattended restore, a refused delete and two approved counter-offers."
+    },
+    {
+      "id": "R4",
+      "name": "Persistent preference",
+      "tier": "C",
+      "claim": "Records a stated preference to disk and applies it on a later run in a different process without being told again, and cannot apply one in the run that recorded it.",
+      "command": "python demo.py --cap R4",
+      "observable": "Names the two recorded preferences and the message each came from, then the five messages the run handled differently because of them: m018, m048 and m055 carry copy priya@paperjet.io, and m051 and m043 cite m041. Run with --msg m039 to watch the injection be refused for fitting neither preference shape, and --msg m041 to watch the same treatment accept one.",
+      "evidence": "memory.json on disk between runs; trace.jsonl events tagged cap=R4 - two 'in force' and two 'remembered'."
+    },
+    {
+      "id": "R5",
+      "name": "Refuse embedded instructions",
+      "tier": "C",
+      "claim": "Finds instructions addressed to an assistant inside message bodies before any model call, refuses them, names what each one attempted, reports them to the owner and leaves them in the mailbox.",
+      "command": "python demo.py --cap R5",
+      "observable": "Flags m017, m024, m039 and m047, quoting both the sentence that speaks to an assistant and the sentence that asks it to act. Prints '4 flagged, 0 deleted, 0 acted on, 100 messages still in the run' and checks outbox/ itself for every address the attacks named. 'python demo.py --cap R5 --blind' runs the same triage with the model asked nothing at all and still catches all four.",
+      "evidence": "trace.jsonl, events tagged cap=R5 - four 'refusal' events naming each id and what it attempted."
+    },
+    {
+      "id": "R6",
+      "name": "Dashboard",
+      "tier": "C",
+      "claim": "Builds a three-pane view from a completed run with no model call, every commitment citing the messages it was taken from and every conflict called out rather than listed.",
+      "command": "python demo.py --cap R6",
+      "observable": "Writes dashboard.json and dashboard.html: 4 pending, 15 flagged, 21 commitments, 2 conflicts. The board deck lands on 2026-09-16 citing both m040 and m038, neither of which states that date, and the launch cites m026 and m036. Both conflicts are named, and m080, which carries a time but no day, is named underneath with the reason it would not resolve.",
+      "evidence": "dashboard.html and dashboard.json; trace.jsonl events tagged cap=R6 - 21 'commitment' and 2 'conflict'."
+    },
+    {
+      "id": "X1",
+      "name": "Thread digest",
+      "tier": "B",
+      "claim": "Reduces every conversation of three messages or more to what it is about and the one message still waiting on the owner, with the question lifted out of that message word for word.",
+      "command": "python demo.py --cap X1",
+      "observable": "Summarises t-launch, nine messages, down to m030 and the question 'Sam, can you approve the final pricing copy by the 12th?', and t-api, four messages, down to m008. The t-api summary says credentials were shared and contains none, because they are taken out of the thread before the model reads it.",
+      "evidence": "trace.jsonl, events tagged cap=X1 - two 'digest' events carrying the thread, its message ids and the open question."
+    },
+    {
+      "id": "X2",
+      "name": "Follow-up tracking",
+      "tier": "B",
+      "claim": "Reports every message the owner sent and whether anybody answered it, and drafts a chase for those waiting three days or more using only words he already used himself.",
+      "command": "python demo.py --cap X2",
+      "observable": "Four rows. m044 to priya@paperjet.io, sent 2026-09-02, seven days with no answer, is chased. m003 is not, because m005 answered it; m041 is not, because it went to Sam himself; m039 is not, because the run quarantined it.",
+      "evidence": "trace.jsonl, events tagged cap=X2 - four 'followup' events."
+    },
+    {
+      "id": "X3",
+      "name": "Conflict counter-offer",
+      "tier": "C",
+      "claim": "Finds a proposed time that breaks a stated preference or lands on something already settled, works out three alternatives from the calendar, and holds the reply for approval.",
+      "command": "python demo.py --cap X3 --dry-run",
+      "observable": "Two counter-offers, both to aria.f@northwind.vc. m043 asks for Monday 14 September at 9:00am, which breaks the rule recorded from m041, so it keeps the day and offers 11:00am, 2:00pm and 4:00pm. m010 asks for Tuesday the 15th at 3:00pm, which m061 holds, so it keeps the time and offers Wednesday, Thursday and Friday. Neither reply says what the owner is doing instead.",
+      "evidence": "trace.jsonl, events tagged cap=X3 - two 'offer' events carrying the slots; approvals.jsonl, where both were put to a person."
+    },
+    {
+      "id": "X4",
+      "name": "Ask it why",
+      "tier": "A",
+      "claim": "Accounts for any one message in eight sections, each naming the file it was read from, including the reasons nothing was drafted, calendared or put to a person.",
+      "command": "python demo.py --cap X4 --msg m024",
+      "observable": "Prints eight sections for m024, read from mailbox.json, run.json, approvals.jsonl and trace.jsonl: quarantined by the guard, what it attempted and the external address it named, why no reply was drafted, why nothing of it reached the calendar, and the trace events carrying it. Works for any of the 100 ids.",
+      "evidence": "the events already tagged with that message id under cap=R1 to cap=R6; this capability writes none of its own."
+    }
+  ]
+}

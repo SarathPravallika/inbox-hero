@@ -43,6 +43,21 @@ def ensure_run(fresh: bool) -> dict:
     return router.run()
 
 
+def listed() -> None:
+    manifest = importlib.import_module("manifest")
+    router = importlib.import_module("router")
+    made = manifest.written(router.stored())
+
+    heading(f"the manifest, written from the run of {router.stored()['at']}")
+    for row in made["capabilities"]:
+        print(f"  {row['id']}  {row['tier']}  {row['name']:<29}{row['command']}")
+    rule()
+    print(f"{len(made['capabilities'])} capabilities, "
+          f"{made['system']['messages_processed']} messages processed, "
+          f"{made['system']['rule_handled']} of them without a model")
+    print(f"written to {Paths.MANIFEST.name}")
+
+
 def cleaned() -> None:
     actions = importlib.import_module("actions")
     gate = importlib.import_module("gate")
@@ -536,6 +551,11 @@ def main() -> None:
         help="throw away every recorded preference, so the next run starts with none",
     )
     parser.add_argument(
+        "--manifest",
+        action="store_true",
+        help="write capabilities.json from the run artifact and the code",
+    )
+    parser.add_argument(
         "--clean",
         action="store_true",
         help="empty outbox/ and trash/ and truncate approvals.jsonl, so the evidence "
@@ -553,6 +573,10 @@ def main() -> None:
 
     if args.test:
         raise SystemExit(0 if sibling("tests", "runner").run(args.test) else 1)
+
+    if args.manifest:
+        listed()
+        return
 
     if args.clean:
         cleaned()

@@ -34,15 +34,16 @@ def check_vocabulary() -> list[str]:
 def check_tiers() -> list[str]:
     problems = []
     for name in Capability:
-        if name not in Manifest.TIER:
-            problems.append(f"{name} is a capability the manifest lists with no tier")
-    for name, tier in Manifest.TIER.items():
+        if name not in Manifest.ROWS:
+            problems.append(f"{name} is a capability the manifest lists with no row")
+    held = [row["tier"] for row in Manifest.ROWS.values()]
+    for name, row in Manifest.ROWS.items():
         if name not in tuple(Capability):
-            problems.append(f"{name} carries a tier and is not a capability")
-        if tier not in tuple(Tier):
-            problems.append(f"{name} is tier {tier!r}, which is not a tier")
+            problems.append(f"{name} carries a row and is not a capability")
+        if row["tier"] not in tuple(Tier):
+            problems.append(f"{name} is tier {row['tier']!r}, which is not a tier")
     for tier in Tier:
-        if tier not in Manifest.TIER.values():
+        if tier not in held:
             problems.append(f"no capability is tier {tier}, and the assignment expects one")
     return problems
 
